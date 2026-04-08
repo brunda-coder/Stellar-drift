@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+
 import NeonButton from '../components/ui/NeonButton';
 import GlassCard from '../components/ui/GlassCard';
 import type { Page } from '../App';
@@ -94,19 +93,19 @@ export default function ProfilePage({ setPage }: ProfilePageProps) {
                 label="Base Suit" 
                 options={['standard', 'combat', 'stealth', 'explorer']} 
                 current={profile.avatar.suit} 
-                onChange={v => updateAvatar({ suit: v as any })} 
+                onChange={(v: any) => updateAvatar({ suit: v as any })} 
               />
               <Selector 
                 label="Visor Type" 
                 options={['clear', 'tinted', 'hud', 'mirrored']} 
                 current={profile.avatar.visor} 
-                onChange={v => updateAvatar({ visor: v as any })} 
+                onChange={(v: any) => updateAvatar({ visor: v as any })} 
               />
               <Selector 
                 label="Add-on Module" 
                 options={['none', 'antenna', 'jetpack', 'shoulderpads']} 
                 current={profile.avatar.accessory} 
-                onChange={v => updateAvatar({ accessory: v as any })} 
+                onChange={(v: any) => updateAvatar({ accessory: v as any })} 
               />
 
               <div>

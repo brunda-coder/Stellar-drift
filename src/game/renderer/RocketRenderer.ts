@@ -1,4 +1,3 @@
-import { useGameStore } from '../store/gameStore';
 
 export class RocketRenderer {
   static draw(

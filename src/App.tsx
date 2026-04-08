@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import MainMenu from './pages/MainMenu';
 import GameScreen from './pages/GameScreen';

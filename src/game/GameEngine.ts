@@ -328,7 +328,6 @@ export class GameEngine {
     }
 
     // Player Update
-    const fireRateMod = this.ab.q.cd > 0 ? 1 : 1; // can change based on buffs
     this.player.update(dt, this.mouse, 5.0, this.wave, (ang, dim) => {
         this.buls.push(new Bullet(this.player!.x, this.player!.y, ang, 'p', dim, '#00e8ff'));
         // High level burst
@@ -436,7 +435,7 @@ export class GameEngine {
     if (!this.player) return;
     
     // HP, EP, Shield Vitals (Top Left)
-    const drawBar = (x: number, y: number, icon: string, val: number, max: number, colorStart: string, colorEnd: string, isShield = false) => {
+    const drawBar = (x: number, y: number, icon: string, val: number, max: number, colorStart: string, colorEnd: string) => {
       cx.fillStyle = `rgba(255,255,255,0.6)`;
       cx.font = '12px "Rajdhani"';
       cx.fillText(icon, x, y + 4);
@@ -466,7 +465,7 @@ export class GameEngine {
 
     drawBar(22, 22, '♥', this.player.hp, this.player.mhp, '#ff3a8c', '#ff6b35');
     drawBar(22, 36, '⚡', this.player.ep, this.player.mep, '#00e8ff', '#8b45ff');
-    drawBar(22, 50, '◈', this.player.sh, this.player.msh, '#00ffaa', '#00e8ff', true);
+    drawBar(22, 50, '◈', this.player.sh, this.player.msh, '#00ffaa', '#00e8ff');
 
     // Score & Combo (Top Right)
     cx.textAlign = 'right';

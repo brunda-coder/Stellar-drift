@@ -1,5 +1,4 @@
 import { RocketRenderer } from '../renderer/RocketRenderer';
-import { hypot } from '../utils';
 
 export class Player {
   x: number = 0;

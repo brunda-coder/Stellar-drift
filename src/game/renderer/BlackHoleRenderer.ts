@@ -1,4 +1,4 @@
-import { rnd, hypot, drawArc } from '../utils';
+import { drawArc } from '../utils';
 
 export class BlackHoleRenderer {
   static draw(cx: CanvasRenderingContext2D, x: number, y: number, r: number, pr: number, rot: number, lifeAl: number) {

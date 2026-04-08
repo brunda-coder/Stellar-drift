@@ -1,4 +1,4 @@
-import { rnd, drawArc } from '../utils';
+import { drawArc } from '../utils';
 
 export class Bullet {
   x: number;
