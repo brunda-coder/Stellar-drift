@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #010308;
+  --color-plasma: #00e8ff;
+  --color-nova: #ff5c1a;
+  --color-gold: #ffd060;
+  --color-violet: #8b45ff;
+  --color-rose: #ff3a8c;
+  --color-safe: #00ffaa;
+  
+  --font-rajdhani: "Rajdhani", sans-serif;
+  --font-oxanium: "Oxanium", sans-serif;
+}
+
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600;700&family=Oxanium:wght@200;400;600;800&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--color-void);
+    color: white;
+    font-family: var(--font-rajdhani);
+    user-select: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  
+  body.game-active {
+    overflow: hidden;
+    cursor: none;
+  }
+}
+
+/* Custom Scrollbar for App UI pages */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 232, 255, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 232, 255, 0.4);
+}
