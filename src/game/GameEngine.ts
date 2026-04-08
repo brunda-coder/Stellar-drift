@@ -257,15 +257,23 @@ export class GameEngine {
     ctx.save();
     ctx.translate(this.sx, this.sy);
 
-    // Dynamic background gradients logic
+    // Dynamic background gradients logic based on Sector (wave) progression
+    // As wave increases, themes get more intense (reds, deep purples, dark greens)
+    const intensity = Math.min(1.0, this.wave / 15);
+    
+    // Core hue shifts from standard galaxy to intense danger colors
+    const rShift = Math.floor(intensity * 100);
+    const waveBg1 = this.galaxyColors.bg1 || `rgba(${139 + rShift},69,255,0.033)`;
+    const waveBg2 = this.galaxyColors.bg2 || `rgba(${rShift*2},232,255,0.022)`;
+
     const bg1 = ctx.createRadialGradient(w*0.3, h*0.3, 0, w*0.3, h*0.3, w*0.8);
-    bg1.addColorStop(0, this.galaxyColors.bg1 || 'rgba(139,69,255,0.033)');
+    bg1.addColorStop(0, waveBg1);
     bg1.addColorStop(1, 'transparent');
     ctx.fillStyle = bg1;
     ctx.fillRect(0,0,w,h);
 
     const bg2 = ctx.createRadialGradient(w*0.75, h*0.7, 0, w*0.75, h*0.7, w*0.6);
-    bg2.addColorStop(0, this.galaxyColors.bg2 || 'rgba(0,232,255,0.022)');
+    bg2.addColorStop(0, waveBg2);
     bg2.addColorStop(1, 'transparent');
     ctx.fillStyle = bg2;
     ctx.fillRect(0,0,w,h);

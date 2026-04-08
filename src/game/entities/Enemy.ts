@@ -1,4 +1,5 @@
-import { rnd, drawArc } from '../utils';
+import { rnd } from '../utils';
+import { EnemyRenderer } from '../renderer/EnemyRenderer';
 
 export type EnemyType = 'DRIFTER' | 'HUNTER' | 'TITAN' | 'SWARMER' | 'ORBITER' | 'SNIPER' | 'PHANTOM';
 
@@ -148,37 +149,8 @@ export class Enemy {
     const s = this.sz;
     
     cx.beginPath();
-    if (this.sh === 'tri') {
-      cx.moveTo(s, 0); cx.lineTo(-s*.6, -s*.9); cx.lineTo(-s*.6, s*.9);
-    } else if (this.sh === 'dia') {
-      cx.moveTo(0, -s); cx.lineTo(s, 0); cx.lineTo(0, s); cx.lineTo(-s, 0);
-    } else if (this.sh === 'hex') {
-      for(let i=0; i<6; i++){
-        const a = (i/6)*Math.PI*2 - Math.PI/6;
-        i===0 ? cx.moveTo(Math.cos(a)*s, Math.sin(a)*s) : cx.lineTo(Math.cos(a)*s, Math.sin(a)*s);
-      }
-    } else if (this.sh === 'star') {
-      for(let i=0; i<8; i++){
-        const a = (i/8)*Math.PI*2;
-        const r = i%2===0 ? s : s*.42;
-        i===0 ? cx.moveTo(Math.cos(a)*r, Math.sin(a)*r) : cx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
-      }
-    } else if (this.sh === 'arr') {
-      cx.moveTo(s, 0); cx.lineTo(-s*.4, -s*.7); cx.lineTo(-s*.7, 0); cx.lineTo(-s*.4, s*.7);
-    } else if (this.sh === 'cross') {
-      cx.moveTo(s, s*0.2); cx.lineTo(s*0.2, s*0.2); cx.lineTo(s*0.2, s); cx.lineTo(-s*0.2, s);
-      cx.lineTo(-s*0.2, s*0.2); cx.lineTo(-s, s*0.2); cx.lineTo(-s, -s*0.2); cx.lineTo(-s*0.2, -s*0.2);
-      cx.lineTo(-s*0.2, -s); cx.lineTo(s*0.2, -s); cx.lineTo(s*0.2, -s*0.2); cx.lineTo(s, -s*0.2);
-    } else {
-      drawArc(cx, 0, 0, s, 0, Math.PI * 2);
-    }
+    EnemyRenderer.draw(cx, this.type, s, this.col);
     cx.closePath();
-    
-    cx.fillStyle = this.fl > 0 ? '#fff' : this.col;
-    cx.fill();
-    cx.strokeStyle = 'rgba(255,255,255,0.18)';
-    cx.lineWidth = 1;
-    cx.stroke();
     
     // HP Bar
     if (this.hp < this.mhp) {
