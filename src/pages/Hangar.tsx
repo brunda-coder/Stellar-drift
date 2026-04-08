@@ -123,7 +123,7 @@ export default function Hangar({ setPage }: HangarProps) {
   );
 }
 
-const Stat = ({ row, val, max, color, format = (v: number) => v.toString() }: any) => {
+const Stat = ({ row, val, max, color, format = (v: any) => v.toString() }: any) => {
   const pct = Math.min(100, Math.max(0, (val / max) * 100));
   return (
     <div className="flex flex-col gap-1">
