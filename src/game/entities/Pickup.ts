@@ -1,0 +1,98 @@
+import { rnd, drawArc } from '../utils';
+
+export class Pickup {
+  x: number;
+  y: number;
+  type: 'star' | 'hp' | 'ep' | 'mega';
+  alive: boolean = true;
+  age: number = 0;
+  vx: number;
+  vy: number;
+  
+  constructor(x: number, y: number) {
+    this.x = x;
+    this.y = y;
+    const r = Math.random();
+    this.type = r < 0.55 ? 'star' : r < 0.78 ? 'hp' : r < 0.93 ? 'ep' : 'mega';
+    this.vx = rnd(-1.5, 1.5);
+    this.vy = rnd(-1.5, 1.5);
+  }
+
+  update(dt: number, px: number, py: number, psz: number, cCb: (type: 'star' | 'hp' | 'ep' | 'mega', x: number, y: number) => void) {
+    this.age += dt;
+    if (this.age > 7000) {
+      this.alive = false;
+      return;
+    }
+    
+    this.vx *= 0.96;
+    this.vy *= 0.96;
+    this.x += this.vx;
+    this.y += this.vy;
+    
+    // Magnetize to player
+    const d = Math.hypot(px - this.x, py - this.y);
+    if (d < 70) {
+      const a = Math.atan2(py - this.y, px - this.x);
+      this.vx += Math.cos(a) * 2.5;
+      this.vy += Math.sin(a) * 2.5;
+    }
+    
+    // Collect
+    if (d < psz + 9) {
+      this.alive = false;
+      cCb(this.type, this.x, this.y);
+    }
+  }
+
+  draw(cx: CanvasRenderingContext2D) {
+    const pulse = 1 + Math.sin(this.age * 0.005) * 0.15;
+    const al = this.age > 5500 ? (7000 - this.age) / 1500 : 1;
+    
+    cx.save();
+    cx.globalAlpha = al;
+    cx.translate(this.x, this.y);
+    cx.scale(pulse, Math.max(0.1, pulse));
+    cx.shadowBlur = 18;
+    
+    const C = { star: '#ffd060', hp: '#ff3a8c', ep: '#00e8ff', mega: '#fff' };
+    cx.shadowColor = C[this.type];
+    cx.strokeStyle = C[this.type];
+    cx.lineWidth = 2;
+    
+    if (this.type === 'star') {
+      cx.fillStyle = '#ffd060';
+      cx.beginPath();
+      for(let i=0; i<5; i++){
+        const a = (i/5)*Math.PI*2 - Math.PI/2;
+        const r = i%2===0 ? 8 : 3.5;
+        i===0 ? cx.moveTo(Math.cos(a)*r, Math.sin(a)*r) : cx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+      }
+      cx.closePath();
+      cx.fill();
+    } else if (this.type === 'hp') {
+      cx.beginPath();
+      cx.moveTo(0, -7); cx.lineTo(0, 7);
+      cx.moveTo(-7, 0); cx.lineTo(7, 0);
+      cx.stroke();
+    } else if (this.type === 'ep') {
+      cx.beginPath();
+      drawArc(cx, 0, 0, 7, 0, Math.PI * 2);
+      cx.stroke();
+      cx.beginPath();
+      cx.moveTo(-3, -3); cx.lineTo(1, -7); cx.lineTo(3, -3);
+      cx.moveTo(3, 3); cx.lineTo(-1, 7); cx.lineTo(-3, 3);
+      cx.stroke();
+    } else {
+      cx.fillStyle = 'rgba(255,255,255,0.08)';
+      cx.beginPath();
+      drawArc(cx, 0, 0, 9, 0, Math.PI * 2);
+      cx.fill(); cx.stroke();
+      cx.fillStyle = '#fff';
+      cx.beginPath();
+      drawArc(cx, 0, 0, 4, 0, Math.PI * 2);
+      cx.fill();
+    }
+    cx.restore();
+  }
+}
