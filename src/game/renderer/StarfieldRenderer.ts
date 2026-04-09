@@ -1,15 +1,17 @@
 import { rnd } from '../utils';
 
 export class StarfieldRenderer {
-  stars: {x: number, y: number, r: number, a: number, tw: number}[] = [];
+  stars: {x: number, y: number, r: number, a: number, tw: number, c: string}[] = [];
 
   constructor(w: number, h: number) {
+    const cols = ['255,248,225', '200,220,255', '255,200,200', '255,230,150'];
     this.stars = Array.from({length: 220}, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
-      r: rnd(0.2, 1.5),
-      a: rnd(0.08, 0.55),
-      tw: Math.random() * Math.PI * 2
+      r: rnd(0.5, 2.0),
+      a: rnd(0.1, 0.7),
+      tw: Math.random() * Math.PI * 2,
+      c: cols[Math.floor(Math.random() * cols.length)]
     }));
   }
 
@@ -23,8 +25,25 @@ export class StarfieldRenderer {
 
       const al = s.a * (0.65 + Math.sin(s.tw) * 0.35);
       cx.beginPath();
-      cx.arc(drawX, drawY, s.r, 0, Math.PI * 2);
-      cx.fillStyle = `rgba(255,248,225,${al})`;
+      
+      const rOuter = s.r * 1.8;
+      const rInner = s.r * 0.4;
+      for (let i = 0; i < 8; i++) {
+        const rad = (i * Math.PI) / 4;
+        const radius = i % 2 === 0 ? rOuter : rInner;
+        const vx = drawX + Math.cos(rad) * radius;
+        const vy = drawY + Math.sin(rad) * radius;
+        if (i === 0) cx.moveTo(vx, vy);
+        else cx.lineTo(vx, vy);
+      }
+      cx.closePath();
+      cx.fillStyle = `rgba(${s.c},${al})`;
+      cx.fill();
+      
+      // core glow
+      cx.beginPath();
+      cx.arc(drawX, drawY, s.r * 0.5, 0, Math.PI * 2);
+      cx.fillStyle = `rgba(255,255,255,${al * 1.5})`;
       cx.fill();
     });
   }

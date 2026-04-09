@@ -50,13 +50,13 @@ export class Player {
     while(diff > Math.PI) diff -= Math.PI * 2;
     while(diff < -Math.PI) diff += Math.PI * 2;
     
-    this.ang += diff * 0.13;
+    this.ang += diff * 0.28;
     
-    const maxSpeed = (shipSpeedStat * 0.8);
-    const spd = d > 8 ? Math.min(d * 0.04, maxSpeed) : 0;
+    const maxSpeed = shipSpeedStat * 1.5;
+    const spd = d > 5 ? Math.min(d * 0.1, maxSpeed) : 0;
     
-    this.vx += (Math.cos(this.ang) * spd - this.vx) * 0.18;
-    this.vy += (Math.sin(this.ang) * spd - this.vy) * 0.18;
+    this.vx += (Math.cos(this.ang) * spd - this.vx) * 0.25;
+    this.vy += (Math.sin(this.ang) * spd - this.vy) * 0.25;
     
     this.x += this.vx;
     this.y += this.vy;

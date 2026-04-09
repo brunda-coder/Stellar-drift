@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import NeonButton from '../components/ui/NeonButton';
 import type { Page } from '../App';
 import { useGameStore } from '../store/gameStore';
@@ -11,11 +12,23 @@ export default function MainMenu({ setPage }: MainMenuProps) {
   const profile = useGameStore(s => s.profile);
   const claimDailyReward = useGameStore(s => s.claimDailyReward);
 
+  const [showReward, setShowReward] = useState(false);
+  const [alreadyClaimedMsg, setAlreadyClaimedMsg] = useState(false);
+
+  useEffect(() => {
+    if (claimDailyReward()) {
+      setShowReward(true);
+      setTimeout(() => setShowReward(false), 4000);
+    }
+  }, [claimDailyReward]);
+
   const handleClaim = () => {
     if (claimDailyReward()) {
-      alert('Claimed 500 Credits!');
+      setShowReward(true);
+      setTimeout(() => setShowReward(false), 4000);
     } else {
-      alert('Daily reward already claimed today.');
+      setAlreadyClaimedMsg(true);
+      setTimeout(() => setAlreadyClaimedMsg(false), 2000);
     }
   };
 
@@ -62,7 +75,7 @@ export default function MainMenu({ setPage }: MainMenuProps) {
             PILOT PROFILE
           </NeonButton>
           <NeonButton onClick={handleClaim} variant="safe" size="sm">
-            DAILY REWARD
+            {alreadyClaimedMsg ? 'CLAIMED TODAY' : 'DAILY REWARD'}
           </NeonButton>
         </div>
       </motion.div>
@@ -72,6 +85,20 @@ export default function MainMenu({ setPage }: MainMenuProps) {
         <span>CREDITS: <span className="text-plasma font-bold">💎 {profile.credits.toLocaleString()}</span></span>
         <span>HIGH SCORE: <span className="text-gold font-bold">{profile.stats.highScore.toLocaleString()}</span></span>
       </div>
+
+      <AnimatePresence>
+        {showReward && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: -60 }}
+            exit={{ opacity: 0, scale: 0.8, y: -80 }}
+            className="absolute top-1/4 z-50 px-8 py-4 rounded bg-safe/10 border border-safe/40 backdrop-blur-md text-safe font-oxanium flex items-center shadow-[0_0_30px_rgba(0,255,170,0.15)] pointer-events-none"
+          >
+            <span className="tracking-widest font-bold">LOGIN REWARD CLAIMED</span>
+            <span className="ml-4 font-bold text-white text-lg">+500 💎</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
