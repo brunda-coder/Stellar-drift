@@ -88,7 +88,7 @@ export default function Hangar({ setPage }: HangarProps) {
                   <div className="grid grid-cols-2 gap-2 mb-6">
                     <Stat row="Hull" val={ship.hull} max={1200} color="#ff3a8c" />
                     <Stat row="Energy" val={ship.energy} max={800} color="#00e8ff" />
-                    <Stat row="Speed" val={ship.speed} max={10} color="#ffd060" format={v => v.toFixed(1)} />
+                    <Stat row="Speed" val={ship.speed} max={10} color="#ffd060" format={(v: number) => v.toFixed(1)} />
                     <Stat row="Shield" val={ship.shield} max={1000} color="#00ffaa" />
                   </div>
 

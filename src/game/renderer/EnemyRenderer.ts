@@ -1,4 +1,4 @@
-import { EnemyType } from '../entities/Enemy';
+import type { EnemyType } from '../entities/Enemy';
 
 export class EnemyRenderer {
   static draw(cx: CanvasRenderingContext2D, type: EnemyType, sz: number, col: string) {
