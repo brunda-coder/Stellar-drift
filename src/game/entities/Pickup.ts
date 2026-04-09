@@ -63,10 +63,12 @@ export class Pickup {
     if (this.type === 'star') {
       cx.fillStyle = '#ffd060';
       cx.beginPath();
-      for(let i=0; i<5; i++){
-        const a = (i/5)*Math.PI*2 - Math.PI/2;
-        const r = i%2===0 ? 8 : 3.5;
-        i===0 ? cx.moveTo(Math.cos(a)*r, Math.sin(a)*r) : cx.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+      // True 5-pointed golden star (10 vertices: 5 outer, 5 inner)
+      for(let i = 0; i < 10; i++) {
+        const a = (i * Math.PI) / 5 - Math.PI / 2;
+        const r = i % 2 === 0 ? 9 : 3.8;
+        if (i === 0) cx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+        else cx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
       }
       cx.closePath();
       cx.fill();

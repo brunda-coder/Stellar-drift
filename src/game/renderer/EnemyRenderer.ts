@@ -20,23 +20,46 @@ export class EnemyRenderer {
       cx.fill();
 
     } else if (type === 'HUNTER') {
-      // Sleek arrowhead fighter
+      // Sleek arrowhead fighter - Overhauled
+      cx.beginPath();
+      cx.moveTo(-sz * 0.8, -sz * 0.3);
+      cx.lineTo(-sz * 1.8, -sz * 0.3);
+      cx.moveTo(-sz * 0.8, sz * 0.3);
+      cx.lineTo(-sz * 1.8, sz * 0.3);
+      cx.strokeStyle = 'rgba(255, 92, 26, 0.9)';
+      cx.lineWidth = sz * 0.25;
+      cx.stroke();
+
+      cx.beginPath();
       cx.moveTo(sz * 1.5, 0);
-      cx.lineTo(-sz * 0.8, -sz * 1.1);
+      cx.lineTo(-sz * 0.8, -sz * 1.2);
       cx.lineTo(-sz * 0.4, 0);
-      cx.lineTo(-sz * 0.8, sz * 1.1);
+      cx.lineTo(-sz * 0.8, sz * 1.2);
       cx.closePath();
       
       const g = cx.createLinearGradient(-sz, 0, sz, 0);
-      g.addColorStop(0, '#1a1a2e');
+      g.addColorStop(0, '#111');
       g.addColorStop(1, col);
       cx.fillStyle = g;
       cx.fill();
-      
-      // glowing engine
+      cx.strokeStyle = col;
+      cx.lineWidth = 1.5;
+      cx.stroke();
+
+      // Armor plating lines
       cx.beginPath();
-      cx.arc(-sz * 0.5, 0, sz * 0.3, 0, Math.PI * 2);
-      cx.fillStyle = '#fff';
+      cx.moveTo(0, 0);
+      cx.lineTo(-sz * 0.6, -sz * 0.8);
+      cx.moveTo(0, 0);
+      cx.lineTo(-sz * 0.6, sz * 0.8);
+      cx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      cx.lineWidth = 1;
+      cx.stroke();
+
+      // Glowing Cockpit
+      cx.beginPath();
+      cx.ellipse(sz * 0.2, 0, sz * 0.5, sz * 0.15, 0, 0, Math.PI * 2);
+      cx.fillStyle = 'rgba(0, 232, 255, 0.7)';
       cx.fill();
 
     } else if (type === 'TITAN') {
@@ -60,13 +83,34 @@ export class EnemyRenderer {
       cx.stroke();
 
     } else if (type === 'SWARMER') {
-      // Tiny fast dart
+      // Tiny fast dart - Overhauled to look like a mechanical drone
+      cx.beginPath();
+      cx.moveTo(-sz * 0.8, 0);
+      cx.lineTo(-sz * 1.8, 0);
+      cx.strokeStyle = 'rgba(0, 232, 255, 0.8)';
+      cx.lineWidth = sz * 0.3;
+      cx.stroke();
+
+      cx.beginPath();
       cx.moveTo(sz * 1.3, 0);
-      cx.lineTo(-sz * 0.8, -sz * 0.5);
+      cx.lineTo(-sz * 0.8, -sz * 0.6);
       cx.lineTo(-sz * 0.5, 0);
-      cx.lineTo(-sz * 0.8, sz * 0.5);
+      cx.lineTo(-sz * 0.8, sz * 0.6);
       cx.closePath();
-      cx.fillStyle = col;
+      
+      const g = cx.createLinearGradient(-sz, 0, sz, 0);
+      g.addColorStop(0, '#222');
+      g.addColorStop(1, col);
+      cx.fillStyle = g;
+      cx.fill();
+      cx.lineWidth = 1;
+      cx.strokeStyle = col;
+      cx.stroke();
+
+      // Cockpit Window
+      cx.beginPath();
+      cx.arc(0, 0, sz * 0.25, 0, Math.PI * 2);
+      cx.fillStyle = 'rgba(0, 232, 255, 0.8)';
       cx.fill();
 
     } else if (type === 'ORBITER') {

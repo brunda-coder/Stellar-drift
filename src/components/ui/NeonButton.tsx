@@ -11,10 +11,10 @@ interface NeonButtonProps extends HTMLMotionProps<"button"> {
 export default function NeonButton({ variant = 'primary', size = 'md', children, className = '', ...props }: NeonButtonProps) {
   const getVariantStyles = () => {
     switch (variant) {
-      case 'primary': return 'border-plasma text-plasma before:bg-plasma/10 hover:border-plasma hover:shadow-[0_0_28px_rgba(0,232,255,0.2)] hover:text-white';
-      case 'secondary': return 'border-white/10 text-white/30 hover:border-white/20 hover:text-white/50 border-white/20';
-      case 'danger': return 'border-rose text-rose before:bg-rose/10 hover:border-rose hover:shadow-[0_0_28px_rgba(255,58,140,0.2)] hover:text-white';
-      case 'safe': return 'border-safe text-safe before:bg-safe/10 hover:border-safe hover:shadow-[0_0_28px_rgba(0,255,170,0.2)] hover:text-white';
+      case 'primary': return 'border-plasma/50 text-plasma hover:bg-plasma/20 hover:border-plasma hover:shadow-[0_0_40px_rgba(0,232,255,0.4)] hover:text-white';
+      case 'secondary': return 'border-white/10 text-white/50 hover:bg-white/10 hover:border-white/40 hover:text-white hover:shadow-[0_0_25px_rgba(255,255,255,0.15)]';
+      case 'danger': return 'border-rose/50 text-rose hover:bg-rose/20 hover:border-rose hover:shadow-[0_0_40px_rgba(255,58,140,0.4)] hover:text-white';
+      case 'safe': return 'border-safe/50 text-safe hover:bg-safe/20 hover:border-safe hover:shadow-[0_0_40px_rgba(0,255,170,0.4)] hover:text-white';
     }
   };
 
@@ -28,13 +28,13 @@ export default function NeonButton({ variant = 'primary', size = 'md', children,
 
   return (
     <motion.button
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      className={`relative overflow-hidden bg-transparent border uppercase font-oxanium font-semibold transition-all duration-300 group ${getVariantStyles()} ${getSizeStyles()} ${className}`}
+      whileHover={{ y: -3, scale: 1.02 }}
+      whileTap={{ scale: 0.96 }}
+      className={`relative overflow-hidden bg-white/[0.02] backdrop-blur-sm border uppercase font-oxanium font-bold transition-all duration-300 group ${getVariantStyles()} ${getSizeStyles()} ${className}`}
       {...props}
     >
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 before-bg-inherit" style={{ backgroundColor: 'inherit' }} />
-      <span className="relative z-10">{children}</span>
+      <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+      <span className="relative z-10 tracking-[inherit]">{children}</span>
     </motion.button>
   );
 }
