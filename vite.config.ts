@@ -5,5 +5,5 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: './', // Allows the build to run from file:// protocol (for Capacitor/Tauri)
+  base: '/Stellar-drift/', // Ensure asset paths work correctly on GitHub Pages
 })
