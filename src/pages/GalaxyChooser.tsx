@@ -21,73 +21,75 @@ export default function GalaxyChooser({ setPage }: GalaxyChooserProps) {
   };
 
   const handleSelect = (id: string) => {
-    // Current game state doesn't track "selected" galaxy outside of what's passed to Play,
-    // but in a real app, you could store `selectedGalaxy` in the profile.
-    // We'll just transition to the game screen from here for now!
-    // For now we just implement the UI. We can set it in local state.
     alert(`Started expedition in ${id}`);
     setPage('game');
   };
 
   return (
-    <div className="w-full h-full p-8 flex flex-col relative z-10 bg-[radial-gradient(ellipse_at_bottom_left,rgba(0,232,255,0.05),transparent_60%),#010308]">
+    <div className="w-full h-full p-8 flex flex-col relative z-10">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="font-oxanium text-3xl font-bold text-plasma tracking-widest uppercase">Galaxy Navigation</h2>
-          <p className="text-white/40 text-sm tracking-widest mt-1">Select your destination sector</p>
+          <h2 className="headline-font text-3xl font-bold italic text-primary-container tracking-widest uppercase">Galaxy Navigation</h2>
+          <p className="text-on-surface-variant text-sm tracking-widest mt-1 font-body">Select your destination sector</p>
         </div>
         <div className="flex items-center gap-6">
-          <div className="font-oxanium text-lg text-white">
-            CREDITS: <span className="text-plasma font-bold ml-2">💎 {profile.credits.toLocaleString()}</span>
+          <div className="glass-panel px-4 py-2 border-l-2 border-primary-container flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary-container text-[18px]">diamond</span>
+            <span className="headline-font italic font-bold text-primary-container">{profile.credits.toLocaleString()}</span>
           </div>
           <NeonButton variant="secondary" size="sm" onClick={() => setPage('menu')}>
-            BACK TO MENU
+            ← BACK
           </NeonButton>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-8 flex-1 pr-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 overflow-y-auto pb-8 flex-1 pr-2">
         {GALAXIES.map((galaxy, index) => {
           const isUnlocked = profile.unlockedGalaxies.includes(galaxy.id);
-          
+
           return (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.07 }}
               key={galaxy.id}
             >
               <GlassCard className="h-full flex flex-col relative overflow-hidden group">
-                <div 
-                  className="absolute inset-0 opacity-10 transition-opacity group-hover:opacity-20 z-[-1]"
-                  style={{
-                    background: `linear-gradient(135deg, ${galaxy.colors.bg1}, ${galaxy.colors.bg2})`
-                  }}
+                {/* Unit ID badge */}
+                <div className="absolute top-2 right-3 text-[9px] font-body text-on-surface-variant/50 tracking-widest">
+                  GAL-{galaxy.id.slice(-4).toUpperCase()}
+                </div>
+
+                {/* BG accent */}
+                <div
+                  className="absolute inset-0 opacity-10 transition-opacity group-hover:opacity-20 pointer-events-none"
+                  style={{ background: `linear-gradient(135deg, ${galaxy.colors.bg1}, ${galaxy.colors.bg2})` }}
                 />
-                
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-oxanium text-2xl font-bold tracking-widest uppercase">{galaxy.name}</h3>
-                  <div className="flex text-gold">
+
+                <div className="flex justify-between items-start mb-2 pr-16">
+                  <h3 className="headline-font text-xl font-black italic tracking-widest uppercase text-on-surface">{galaxy.name}</h3>
+                  <div className="flex text-yellow-400">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <span key={i} className={i < galaxy.difficulty ? 'opacity-100' : 'opacity-20'}>★</span>
                     ))}
                   </div>
                 </div>
 
-                <p className="text-white/60 text-sm mb-6 flex-1 h-16">{galaxy.description}</p>
-                
-                <div className="bg-white/5 rounded p-3 mb-6 font-oxanium text-xs space-y-1 border border-white/5">
-                  <div className="text-white/40 uppercase mb-2 tracking-widest text-[10px]">Active Modifiers</div>
+                <p className="text-on-surface-variant text-sm mb-5 flex-1 font-body">{galaxy.description}</p>
+
+                {/* Modifiers block */}
+                <div className="bg-surface-container-lowest/80 p-3 mb-5 border border-outline-variant/20 text-xs space-y-1">
+                  <div className="text-on-surface-variant uppercase mb-2 tracking-widest text-[10px] headline-font">Active Modifiers</div>
                   {Object.keys(galaxy.modifiers).length === 0 ? (
-                    <div className="text-safe">Standard combat conditions</div>
+                    <div className="text-primary-dim font-body">Standard combat conditions</div>
                   ) : (
                     <>
-                      {galaxy.modifiers.enemyHpMultiplier && <div className="text-rose">Enemy HP x{galaxy.modifiers.enemyHpMultiplier}</div>}
-                      {galaxy.modifiers.blackHoleFreq && <div className="text-violet">Black hole anomaly rate x{galaxy.modifiers.blackHoleFreq}</div>}
-                      {galaxy.modifiers.enemyFireRate && <div className="text-plasma">Enemy aggression x{galaxy.modifiers.enemyFireRate}</div>}
-                      {galaxy.modifiers.enemySizeDmg && <div className="text-rose">Titanic enemy class presence</div>}
-                      {galaxy.modifiers.cosmicStormDrift && <div className="text-gold">Class-9 Cosmic Storm interference</div>}
+                      {galaxy.modifiers.enemyHpMultiplier && <div className="text-tertiary font-body">Enemy HP x{galaxy.modifiers.enemyHpMultiplier}</div>}
+                      {galaxy.modifiers.blackHoleFreq && <div className="text-secondary font-body">Black hole anomaly rate x{galaxy.modifiers.blackHoleFreq}</div>}
+                      {galaxy.modifiers.enemyFireRate && <div className="text-primary-container font-body">Enemy aggression x{galaxy.modifiers.enemyFireRate}</div>}
+                      {galaxy.modifiers.enemySizeDmg && <div className="text-tertiary font-body">Titanic enemy class presence</div>}
+                      {galaxy.modifiers.cosmicStormDrift && <div className="text-yellow-400 font-body">Class-9 Cosmic Storm interference</div>}
                     </>
                   )}
                 </div>
@@ -98,9 +100,9 @@ export default function GalaxyChooser({ setPage }: GalaxyChooserProps) {
                       INITIATE WARP JUMP
                     </NeonButton>
                   ) : (
-                    <NeonButton 
+                    <NeonButton
                       className={`w-full ${profile.credits < galaxy.unlockCost ? 'opacity-50' : ''}`}
-                      variant="secondary" 
+                      variant="danger"
                       onClick={() => handleUnlock(galaxy.id, galaxy.unlockCost)}
                       disabled={profile.credits < galaxy.unlockCost}
                     >

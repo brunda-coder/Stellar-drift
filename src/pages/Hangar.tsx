@@ -21,42 +21,41 @@ export default function Hangar({ setPage }: HangarProps) {
 
   const handlePurchase = (shipId: string, price: number) => {
     if (profile.credits >= price) {
-      if (spendCredits(price)) {
-        unlockShip(shipId);
-      }
+      if (spendCredits(price)) unlockShip(shipId);
     }
   };
 
   return (
-    <div className="w-full h-full p-8 flex flex-col relative z-10 bg-[radial-gradient(ellipse_at_top_right,rgba(139,69,255,0.05),transparent_60%),#010308]">
+    <div className="w-full h-full p-8 flex flex-col relative z-10">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h2 className="font-oxanium text-3xl font-bold text-plasma tracking-widest uppercase">The Hangar</h2>
-          <p className="text-white/40 text-sm tracking-widest mt-1">Acquire and equip new vessels</p>
+          <h2 className="headline-font text-3xl font-bold italic text-primary-container tracking-widest uppercase">The Hangar</h2>
+          <p className="text-on-surface-variant text-sm tracking-widest mt-1 font-body">Acquire and equip new vessels — Unit IDs classified</p>
         </div>
         <div className="flex items-center gap-6">
-          <div className="font-oxanium text-lg text-white">
-            CREDITS: <span className="text-plasma font-bold ml-2">💎 {profile.credits.toLocaleString()}</span>
+          <div className="glass-panel px-4 py-2 border-l-2 border-primary-container flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary-container text-[18px]">diamond</span>
+            <span className="headline-font italic font-bold text-primary-container">{profile.credits.toLocaleString()}</span>
           </div>
           <NeonButton variant="secondary" size="sm" onClick={() => setPage('menu')}>
-            BACK TO MENU
+            ← BACK
           </NeonButton>
         </div>
       </div>
 
       <div className="flex gap-8 flex-1 min-h-0">
-        {/* Sidebar - Tiers */}
-        <div className="w-64 flex flex-col gap-2 overflow-y-auto pr-4 pointer-events-auto">
-          {[1,2,3,4,5,6,7,8,9,10].map(tier => (
+        {/* Sidebar Tiers */}
+        <div className="w-52 flex flex-col gap-1 overflow-y-auto pr-2">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(tier => (
             <motion.button
               key={tier}
-              whileHover={{ x: 5 }}
+              whileHover={{ x: 4 }}
               onClick={() => setSelectedTier(tier)}
-              className={`text-left p-4 border rounded-lg font-oxanium tracking-widest transition-all ${
-                selectedTier === tier 
-                  ? 'border-plasma bg-plasma/10 text-plasma shadow-[0_0_15px_rgba(0,232,255,0.2)]'
-                  : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:border-white/20'
+              className={`text-left p-3 font-bold italic headline-font tracking-widest uppercase transition-all duration-200 text-sm ${
+                selectedTier === tier
+                  ? 'bg-primary-container/10 text-primary-container border-l-4 border-primary-container shadow-[0_0_15px_rgba(0,255,255,0.1)]'
+                  : 'text-on-surface-variant border-l-4 border-transparent hover:bg-surface-container-high hover:text-on-surface'
               }`}
             >
               TIER {tier}
@@ -64,8 +63,8 @@ export default function Hangar({ setPage }: HangarProps) {
           ))}
         </div>
 
-        {/* Content - Ships */}
-        <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pb-8 pointer-events-auto pr-4">
+        {/* Ship Grid */}
+        <div className="flex-1 grid grid-cols-2 lg:grid-cols-3 gap-5 overflow-y-auto pb-8 pr-2">
           {shipsInTier.map((ship, index) => {
             const isUnlocked = profile.unlockedShipIds.includes(ship.id);
             const isEquipped = profile.currentShipId === ship.id;
@@ -77,19 +76,27 @@ export default function Hangar({ setPage }: HangarProps) {
                 transition={{ delay: index * 0.05 }}
                 key={ship.id}
               >
-                <GlassCard active={isEquipped} className="h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-oxanium font-bold text-lg" style={{ color: ship.color }}>{ship.name}</h3>
-                    {isEquipped && <span className="bg-safe/20 text-safe text-[10px] px-2 py-1 rounded border border-safe/30">EQUIPPED</span>}
+                <GlassCard active={isEquipped} className="h-full flex flex-col relative">
+                  {/* Unit ID badge */}
+                  <div className="absolute top-2 right-3 text-[9px] font-body text-on-surface-variant/50 tracking-widest uppercase">
+                    UNIT-{ship.id.slice(-4).toUpperCase()}
                   </div>
-                  
-                  <p className="text-white/40 text-xs mb-4 flex-1">{ship.description}</p>
-                  
-                  <div className="grid grid-cols-2 gap-2 mb-6">
-                    <Stat row="Hull" val={ship.hull} max={1200} color="#ff3a8c" />
-                    <Stat row="Energy" val={ship.energy} max={800} color="#00e8ff" />
-                    <Stat row="Speed" val={ship.speed} max={10} color="#ffd060" format={(v: number) => v.toFixed(1)} />
-                    <Stat row="Shield" val={ship.shield} max={1000} color="#00ffaa" />
+                  <div className="flex items-center justify-between mb-3 pr-16">
+                    <h3 className="headline-font font-bold italic text-base" style={{ color: ship.color }}>{ship.name}</h3>
+                    {isEquipped && (
+                      <span className="bg-primary-container/20 text-primary-container text-[9px] px-2 py-1 border border-primary-container/30 headline-font">
+                        EQUIPPED
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-on-surface-variant text-xs mb-4 flex-1 font-body">{ship.description}</p>
+
+                  <div className="grid grid-cols-2 gap-2 mb-5">
+                    <Stat row="Hull" val={ship.hull} max={1200} color="#ff067f" />
+                    <Stat row="Energy" val={ship.energy} max={800} color="#00ffff" />
+                    <Stat row="Speed" val={ship.speed} max={10} color="#d873ff" format={(v: number) => v.toFixed(1)} />
+                    <Stat row="Shield" val={ship.shield} max={1000} color="#00e6e6" />
                   </div>
 
                   <div className="mt-auto">
@@ -102,10 +109,10 @@ export default function Hangar({ setPage }: HangarProps) {
                         EQUIP SHIP
                       </NeonButton>
                     ) : (
-                      <NeonButton 
+                      <NeonButton
                         className={`w-full ${profile.credits < ship.price ? 'opacity-50' : ''}`}
-                        variant="secondary" 
-                        size="sm" 
+                        variant="danger"
+                        size="sm"
                         onClick={() => handlePurchase(ship.id, ship.price)}
                         disabled={profile.credits < ship.price}
                       >
@@ -127,12 +134,12 @@ const Stat = ({ row, val, max, color, format = (v: any) => v.toString() }: any) 
   const pct = Math.min(100, Math.max(0, (val / max) * 100));
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex justify-between text-[10px] font-oxanium text-white/50 uppercase tracking-wider">
+      <div className="flex justify-between text-[10px] headline-font text-on-surface-variant uppercase tracking-wider">
         <span>{row}</span>
         <span style={{ color }}>{format(val)}</span>
       </div>
-      <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      <div className="h-[3px] bg-surface-container-highest overflow-hidden">
+        <div className="h-full" style={{ width: `${pct}%`, background: `linear-gradient(to right, ${color}aa, ${color})` }} />
       </div>
     </div>
   );
