@@ -38,6 +38,7 @@ export interface AvatarConfig {
   visor: 'clear' | 'tinted' | 'hud' | 'mirrored';
   accessory: 'none' | 'antenna' | 'jetpack' | 'shoulderpads';
   suitColor: string;
+  pilotId?: string; // selected pilot character id
 }
 
 export interface UserProfile {
