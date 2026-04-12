@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import NeonButton from '../components/ui/NeonButton';
 import GlassCard from '../components/ui/GlassCard';
 import type { Page } from '../App';
 import { useGameStore } from '../store/gameStore';

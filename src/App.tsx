@@ -10,7 +10,7 @@ export type Page = 'menu' | 'game' | 'hangar' | 'galaxy' | 'profile';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('menu');
-  const isGame = currentPage === 'game';
+
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-surface-container-lowest relative font-body text-white">
