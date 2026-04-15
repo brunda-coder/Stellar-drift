@@ -62,16 +62,25 @@ export class Pickup {
     
     if (this.type === 'star') {
       cx.fillStyle = '#ffd060';
+      cx.strokeStyle = '#ffea8f';
+      cx.lineWidth = 1.4;
+      cx.lineJoin = 'round';
       cx.beginPath();
-      // True 5-pointed golden star (10 vertices: 5 outer, 5 inner)
-      for(let i = 0; i < 10; i++) {
-        const a = (i * Math.PI) / 5 - Math.PI / 2;
-        const r = i % 2 === 0 ? 9 : 3.8;
-        if (i === 0) cx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
-        else cx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      // True 5-pointed golden star
+      const outerRadius = 9;
+      const innerRadius = 4.2;
+      const points = 5;
+      for (let i = 0; i < points * 2; i++) {
+        const angle = (Math.PI / points) * i - Math.PI / 2;
+        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+        const px = Math.cos(angle) * radius;
+        const py = Math.sin(angle) * radius;
+        if (i === 0) cx.moveTo(px, py);
+        else cx.lineTo(px, py);
       }
       cx.closePath();
       cx.fill();
+      cx.stroke();
     } else if (this.type === 'hp') {
       cx.beginPath();
       cx.moveTo(0, -7); cx.lineTo(0, 7);
