@@ -167,8 +167,9 @@ export class EnemyRenderer {
     // Add unified structural elements to all
     if (type !== 'PHANTOM') {
       cx.strokeStyle = 'rgba(255,255,255,0.3)';
-      cx.lineWidth = Math.max(1, sz * 0.05);
+      cx.lineWidth = Math.max(1.5, sz * 0.1);
       cx.stroke();
     }
   }
 }
+

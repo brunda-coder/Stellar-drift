@@ -160,11 +160,11 @@ export class GameEngine {
     this.kills++;
     
     this.combo = Math.min(this.combo + 0.5, 10);
-    this.cTimer = 3200;
+    this.cTimer = 5500;
     if (this.combo > this.peakC) this.peakC = this.combo;
     
     this.boom(e.x, e.y, e.col, e.sz);
-    if (Math.random() < 0.65) this.picks.push(new Pickup(e.x, e.y));
+    if (Math.random() < 0.80) this.picks.push(new Pickup(e.x, e.y));
     this.flt(e.x, e.y, '+' + pts, e.col);
     
     if (e.type === 'TITAN') {
@@ -205,10 +205,11 @@ export class GameEngine {
     
     // Wave budget
     const budget = this.wave * 2 + 4;
-    const pool: any[] = ['DRIFTER', 'DRIFTER', 'HUNTER', 'SWARMER', 'ORBITER'];
-    if (this.wave >= 2) pool.push('PHANTOM');
-    if (this.wave >= 3) pool.push('TITAN');
-    if (this.wave >= 4) pool.push('SNIPER');
+    const pool: any[] = ['DRIFTER', 'SWARMER'];
+    if (this.wave >= 2) pool.push('HUNTER', 'ORBITER');
+    if (this.wave >= 3) pool.push('PHANTOM');
+    if (this.wave >= 4) pool.push('TITAN');
+    if (this.wave >= 5) pool.push('SNIPER');
     
     let hpMod = this.galaxyMods.enemyHpMultiplier || 1.0;
     let dmgSizeMod = this.galaxyMods.enemySizeDmg || 1.0;
@@ -393,7 +394,7 @@ export class GameEngine {
           }
         });
       } else if (b.own === 'e') {
-        if (this.player && Math.hypot(b.x - this.player.x, b.y - this.player.y) < this.player.sz) {
+        if (this.player && Math.hypot(b.x - this.player.x, b.y - this.player.y) < (this.player.sz * 0.7)) {
           this.shake += this.player.hit(b.dmg);
           b.alive = false;
           this.boom(b.x, b.y, b.col, 2);
@@ -500,7 +501,7 @@ export class GameEngine {
       cx.shadowBlur = 0;
       
       const cbw = 120;
-      const cpct = this.cTimer / 3200;
+      const cpct = this.cTimer / 5500;
       cx.fillStyle = 'rgba(255,255,255,0.07)';
       cx.fillRect(this.w - 22 - cbw, 98, cbw, 2);
       cx.fillStyle = cCol;
@@ -587,3 +588,5 @@ export class GameEngine {
     });
   }
 }
+
+

@@ -26,17 +26,7 @@ export class StarfieldRenderer {
       const al = s.a * (0.65 + Math.sin(s.tw) * 0.35);
       cx.beginPath();
       
-      const rOuter = s.r * 1.8;
-      const rInner = s.r * 0.4;
-      for (let i = 0; i < 8; i++) {
-        const rad = (i * Math.PI) / 4;
-        const radius = i % 2 === 0 ? rOuter : rInner;
-        const vx = drawX + Math.cos(rad) * radius;
-        const vy = drawY + Math.sin(rad) * radius;
-        if (i === 0) cx.moveTo(vx, vy);
-        else cx.lineTo(vx, vy);
-      }
-      cx.closePath();
+      cx.arc(drawX, drawY, s.r * 1.2, 0, Math.PI * 2);
       cx.fillStyle = `rgba(${s.c},${al})`;
       cx.fill();
       
@@ -89,3 +79,4 @@ export class Nebula {
     cx.restore();
   }
 }
+

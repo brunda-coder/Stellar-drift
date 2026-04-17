@@ -4,13 +4,13 @@ import { EnemyRenderer } from '../renderer/EnemyRenderer';
 export type EnemyType = 'DRIFTER' | 'HUNTER' | 'TITAN' | 'SWARMER' | 'ORBITER' | 'SNIPER' | 'PHANTOM';
 
 const ET_DEF: Record<EnemyType, {c: string, s: number, h: number, spd: number, sc: number, sh: string}> = {
-  DRIFTER: { c: '#8b45ff', s: 13, h: 30, spd: 1.1, sc: 50, sh: 'tri' },
-  HUNTER:  { c: '#ef4444', s: 11, h: 45, spd: 1.9, sc: 80, sh: 'dia' },
-  TITAN:   { c: '#f59e0b', s: 26, h: 220, spd: 0.55, sc: 220, sh: 'hex' },
-  SWARMER: { c: '#ff3a8c', s: 7,  h: 12, spd: 2.6, sc: 25, sh: 'dot' },
-  ORBITER: { c: '#06b6d4', s: 9,  h: 22, spd: 1.7, sc: 60, sh: 'star' },
-  SNIPER:  { c: '#34d399', s: 10, h: 35, spd: 0.8, sc: 90, sh: 'arr' },
-  PHANTOM: { c: '#ffffff', s: 12, h: 25, spd: 1.3, sc: 100, sh: 'cross' }
+  DRIFTER: { c: '#8b45ff', s: 13, h: 18,  spd: 0.85, sc: 80,  sh: 'tri' },
+  HUNTER:  { c: '#ef4444', s: 11, h: 28,  spd: 1.5,  sc: 120, sh: 'dia' },
+  TITAN:   { c: '#f59e0b', s: 26, h: 130, spd: 0.45, sc: 350, sh: 'hex' },
+  SWARMER: { c: '#ff3a8c', s: 7,  h: 8,   spd: 2.0,  sc: 40,  sh: 'dot' },
+  ORBITER: { c: '#06b6d4', s: 9,  h: 14,  spd: 1.3,  sc: 90,  sh: 'star' },
+  SNIPER:  { c: '#34d399', s: 10, h: 22,  spd: 0.65, sc: 140, sh: 'arr' },
+  PHANTOM: { c: '#ffffff', s: 12, h: 16,  spd: 1.0,  sc: 160, sh: 'cross' }
 };
 
 export class Enemy {
@@ -42,13 +42,13 @@ export class Enemy {
     const d = ET_DEF[type];
     this.col = d.c;
     this.sz = d.s * sizeDmgMod;
-    this.hp = (d.h + wave * 7) * hpMultiplier;
+    this.hp = (d.h + wave * 4) * hpMultiplier;  // wave scaling reduced (was 7 per wave)
     this.mhp = this.hp;
-    this.spd = d.spd + wave * 0.04;
+    this.spd = d.spd + wave * 0.025;             // speed scaling reduced (was 0.04)
     this.sc = d.sc;
     this.sh = d.sh;
     
-    this.scd = rnd(1200, 2800);
+    this.scd = rnd(1800, 3500);                  // longer initial fire delay (was 1200–2800)
     this.oa = Math.random() * Math.PI * 2;
     
     this.spawn(w, h);
@@ -117,8 +117,8 @@ export class Enemy {
     
     // Auto-fire
     this.scd -= dt;
-    if (this.scd <= 0 && d < 380 && this.phaseState !== 'ghost') {
-      this.scd = rnd(1200, 2200);
+    if (this.scd <= 0 && d < 350 && this.phaseState !== 'ghost') {
+      this.scd = rnd(1800, 3200);  // fire less frequently (was 1200–2200)
       if (this.type === 'SNIPER') {
         for(let i = -1; i <= 1; i++) {
           fireCb(this.x, this.y, this.ang + i * 0.2);
