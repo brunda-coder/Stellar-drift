@@ -50,6 +50,7 @@ export default function LoginScreen({ onLoggedIn }: LoginScreenProps) {
 
   const mounted = useRef(true);
   useEffect(() => {
+    mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
 
