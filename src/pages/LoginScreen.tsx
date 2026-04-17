@@ -48,20 +48,27 @@ export default function LoginScreen({ onLoggedIn }: LoginScreenProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const mounted = useRef(true);
+  useEffect(() => {
+    return () => { mounted.current = false; };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     await new Promise(r => setTimeout(r, 320)); // brief loading feel
+    
+    if (!mounted.current) return;
 
     const result = tab === 'register'
       ? register(username, password)
       : login(username, password);
 
-    setLoading(false);
     if (result.ok) {
       onLoggedIn();
     } else {
+      setLoading(false);
       setError(result.error ?? 'Unknown error');
     }
   };

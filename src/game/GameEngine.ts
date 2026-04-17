@@ -42,6 +42,7 @@ export class GameEngine {
   private nebulas: Nebula[] = [];
   private parts: any[] = [];
   private floatTexts: any[] = [];
+  private spawnQueue: { type: any, delay: number, hpMod: number, dmgSizeMod: number }[] = [];
   
   // Renderers
   private starfield: StarfieldRenderer;
@@ -229,11 +230,12 @@ export class GameEngine {
     
     for (let i = 0; i < budget; i++) {
         const t = pool[Math.floor(Math.random() * pool.length)];
-        setTimeout(() => {
-          if (this.player) {
-            this.ents.push(new Enemy(t, this.w, this.h, this.wave, hpMod, dmgSizeMod));
-          }
-        }, i * (this.galaxyMods.enemyFireRate ? 250 : 400));  // slower spawning
+        this.spawnQueue.push({
+          type: t,
+          delay: i * (this.galaxyMods.enemyFireRate ? 250 : 400),  // slower spawning
+          hpMod,
+          dmgSizeMod
+        });
     }
     
     this.wTimer = 8000 + this.wave * 120;  // longer between waves (was 5800)
@@ -418,6 +420,23 @@ export class GameEngine {
 
     this.player.draw(ctx);
     this.spawnWaves(dt);
+    
+    // Process Enemy Spawn Queue synchronously with physics
+    for (let i = this.spawnQueue.length - 1; i >= 0; i--) {
+      const q = this.spawnQueue[i];
+      q.delay -= dt;
+      if (q.delay <= 0) {
+        if (this.player) {
+          this.ents.push(new Enemy(q.type, this.w, this.h, this.wave, q.hpMod, q.dmgSizeMod));
+        }
+        this.spawnQueue.splice(i, 1);
+      }
+    }
+
+    // Hard-Cap arrays to prevent Memory/GC spikes on high waves
+    if (this.buls.length > 400) this.buls.splice(0, this.buls.length - 400);
+    if (this.parts.length > 600) this.parts.splice(0, this.parts.length - 600);
+    if (this.floatTexts.length > 100) this.floatTexts.splice(0, this.floatTexts.length - 100);
     
     if (this.cTimer > 0) {
       this.cTimer -= dt;

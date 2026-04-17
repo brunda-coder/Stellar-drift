@@ -188,11 +188,19 @@ export default function MainMenu({ setPage }: MainMenuProps) {
   const [claimed, setClaimed] = useState(false);
 
   useEffect(() => {
-    if (claimDailyReward()) { setShowReward(true); setTimeout(() => setShowReward(false), 3500); }
+    if (claimDailyReward()) { setShowReward(true); }
   }, [claimDailyReward]);
 
+  useEffect(() => {
+    let t: any;
+    if (showReward) {
+      t = setTimeout(() => setShowReward(false), 3500);
+    }
+    return () => clearTimeout(t);
+  }, [showReward]);
+
   const handleClaim = () => {
-    if (claimDailyReward()) { setShowReward(true); setTimeout(() => setShowReward(false), 3500); }
+    if (claimDailyReward()) { setShowReward(true); }
     else setClaimed(true);
   };
 
