@@ -199,6 +199,7 @@ export default function GameScreen({ setPage }: GameScreenProps) {
   
   const [gameOver, setGameOver] = useState(false);
   const [gameStats, setGameStats] = useState({ score: 0, kills: 0, time: 0 });
+  const [showTutorial, setShowTutorial] = useState(true);  // show on every launch
 
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
@@ -208,7 +209,6 @@ export default function GameScreen({ setPage }: GameScreenProps) {
       (stats) => {
         setGameStats(stats);
         setGameOver(true);
-        // Show cursor when game is over
         document.body.classList.remove('game-active');
       }
     );
@@ -226,6 +226,8 @@ export default function GameScreen({ setPage }: GameScreenProps) {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't forward keys while tutorial is shown
+      if (showTutorial) return;
       engine.handleKeyDown(e.key.toLowerCase());
     };
 
@@ -244,7 +246,7 @@ export default function GameScreen({ setPage }: GameScreenProps) {
 
   const handleRestart = () => {
     setGameOver(false);
-    // engine will re-init
+    setShowTutorial(true);  // show tutorial again on restart
   };
 
   const handleExit = () => {
@@ -252,10 +254,10 @@ export default function GameScreen({ setPage }: GameScreenProps) {
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full relative" style={{ cursor: gameOver ? 'auto' : 'none' }}>
+    <div ref={containerRef} className="w-full h-full relative" style={{ cursor: (gameOver || showTutorial) ? 'auto' : 'none' }}>
       <canvas ref={canvasRef} className="absolute inset-0 block w-full h-full" />
       
-      {!gameOver && (
+      {!gameOver && !showTutorial && (
         <div 
           ref={cursorRef} 
           className="fixed pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2"
@@ -265,8 +267,12 @@ export default function GameScreen({ setPage }: GameScreenProps) {
         </div>
       )}
 
-      {/* The engine will draw HUD on canvas, or we can use React overlaid. We'll use Canvas HUD for performance to match the prototype, 
-          but for abilities CD we could use React or Canvas. We'll stick to a full Canvas approach for gameplay for max perf. */}
+      {/* TUTORIAL OVERLAY — shown at start of every game */}
+      <AnimatePresence>
+        {showTutorial && !gameOver && (
+          <TutorialOverlay onClose={() => setShowTutorial(false)} />
+        )}
+      </AnimatePresence>
 
       {/* GAME OVER SCREEN */}
       {gameOver && (

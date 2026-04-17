@@ -18,7 +18,7 @@ export class Bullet {
     this.vx = Math.cos(a) * (dim ? 6 : 7.2);
     this.vy = Math.sin(a) * (dim ? 6 : 7.2);
     this.own = own;
-    this.dmg = own === `"e`" ? 12 : (dim ? 10 : 22);
+    this.dmg = own === 'e' ? 12 : (dim ? 10 : 22);
     this.sz = dim ? 2 : 3;
     this.col = own === 'p' ? (dim ? 'rgba(0,232,255,0.5)' : playerColor) : '#ff3a8c';
   }
