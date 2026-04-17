@@ -445,135 +445,167 @@ export class GameEngine {
 
   private drawHUD(cx: CanvasRenderingContext2D) {
     if (!this.player) return;
-    
-    // HP, EP, Shield Vitals (Top Left)
-    const drawBar = (x: number, y: number, icon: string, val: number, max: number, colorStart: string, colorEnd: string) => {
-      cx.fillStyle = `rgba(255,255,255,0.6)`;
-      cx.font = '12px "Rajdhani"';
+
+    // ── Level-based HUD colour theme ──
+    // Sector 1-3: Cyan  |  4-6: Orange  |  7-10: Red  |  11+: Void Pink
+    const getTheme = () => {
+      if (this.wave <= 3)  return { primary: '#00e8ff', secondary: '#8b45ff', glow: 'rgba(0,232,255,0.55)', name: 'SECTOR' };
+      if (this.wave <= 6)  return { primary: '#ff8c00', secondary: '#ffd060', glow: 'rgba(255,140,0,0.55)',  name: 'DANGER ZONE' };
+      if (this.wave <= 10) return { primary: '#ef4444', secondary: '#ff6b35', glow: 'rgba(239,68,68,0.55)',  name: 'RED ZONE' };
+      return               { primary: '#ff067f', secondary: '#d873ff', glow: 'rgba(255,6,127,0.6)',          name: 'VOID' };
+    };
+    const theme = getTheme();
+
+    // ── HP / EP / Shield bars (Top Left) ──
+    const drawBar = (x: number, y: number, icon: string, val: number, max: number, barColor: string, barEnd: string, labelColor: string) => {
+      // Background panel
+      cx.fillStyle = 'rgba(0,0,0,0.55)';
+      cx.fillRect(x - 4, y - 14, 200, 22);
+
+      cx.fillStyle = 'rgba(255,255,255,0.75)';
+      cx.font = '13px Arial';
       cx.fillText(icon, x, y + 4);
-      
-      const bw = 138;
-      cx.fillStyle = 'rgba(255,255,255,0.05)';
-      cx.fillRect(x + 20, y, bw, 3);
-      
+
+      const bw = 145;
+      cx.fillStyle = 'rgba(255,255,255,0.07)';
+      cx.fillRect(x + 22, y, bw, 4);
+
       const pct = Math.max(0, Math.min(1, val / max));
       const fw = bw * pct;
       if (fw > 0) {
-        const grd = cx.createLinearGradient(x + 20, y, x + 20 + fw, y);
-        grd.addColorStop(0, colorStart);
-        grd.addColorStop(1, colorEnd);
+        const grd = cx.createLinearGradient(x + 22, y, x + 22 + fw, y);
+        grd.addColorStop(0, barColor);
+        grd.addColorStop(1, barEnd);
         cx.fillStyle = grd;
-        cx.fillRect(x + 20, y, fw, 3);
-        
-        // white glow tip
-        cx.fillStyle = 'rgba(255,255,255,0.85)';
-        cx.fillRect(x + 20 + fw - 3, y - 2, 3, 7);
+        cx.fillRect(x + 22, y, fw, 4);
+        cx.fillStyle = 'rgba(255,255,255,0.9)';
+        cx.fillRect(x + 22 + fw - 3, y - 2, 3, 8);
       }
-      
-      cx.fillStyle = colorStart;
-      cx.font = 'bold 11px "Oxanium"';
-      cx.fillText(Math.ceil(val).toString(), x + 165, y + 5);
+
+      cx.fillStyle = 'rgba(255,255,255,0.85)';
+      cx.font = 'bold 12px "Oxanium"';
+      cx.fillText(Math.ceil(val).toString(), x + 173, y + 5);
     };
 
-    drawBar(22, 22, '♥', this.player.hp, this.player.mhp, '#ff3a8c', '#ff6b35');
-    drawBar(22, 36, '⚡', this.player.ep, this.player.mep, '#00e8ff', '#8b45ff');
-    drawBar(22, 50, '◈', this.player.sh, this.player.msh, '#00ffaa', '#00e8ff');
+    drawBar(22, 24, '♥', this.player.hp, this.player.mhp, '#ff3a8c', '#ff6b35', '#ff3a8c');
+    drawBar(22, 42, '⚡', this.player.ep, this.player.mep, '#00e8ff', '#8b45ff', '#00e8ff');
+    drawBar(22, 60, '◈', this.player.sh, this.player.msh, '#00ffaa', '#00e8ff', '#00ffaa');
 
-    // Score & Combo (Top Right)
+    // ── Score (Top Right) with theme colour glow ──
     cx.textAlign = 'right';
-    cx.font = '800 44px "Oxanium"';
+    cx.font = '800 48px "Oxanium"';
     cx.fillStyle = '#fff';
-    cx.shadowBlur = 30;
-    cx.shadowColor = 'rgba(0,232,255,0.55)';
-    cx.fillText(Math.floor(this.score).toLocaleString(), this.w - 22, 50);
+    cx.shadowBlur = 35;
+    cx.shadowColor = theme.glow;
+    cx.fillText(Math.floor(this.score).toLocaleString(), this.w - 22, 52);
     cx.shadowBlur = 0;
-    
-    cx.font = '9px "Rajdhani"';
-    cx.fillStyle = 'rgba(0,232,255,0.3)';
+
+    cx.font = 'bold 10px "Rajdhani"';
+    cx.fillStyle = `${theme.primary}99`;
     cx.letterSpacing = '5px';
-    cx.fillText("STELLAR POINTS", this.w - 22, 65);
+    cx.fillText('STELLAR POINTS', this.w - 22, 67);
     cx.letterSpacing = '0px';
 
+    // Combo
     if (this.combo > 1.1 && this.cTimer > 0) {
-      cx.font = '800 20px "Oxanium"';
+      cx.font = '800 22px "Oxanium"';
       const cCol = this.combo >= 7 ? '#ffd060' : this.combo >= 4 ? '#ff5c1a' : '#ff3a8c';
       cx.fillStyle = cCol;
-      cx.shadowBlur = 18;
+      cx.shadowBlur = 20;
       cx.shadowColor = cCol;
-      cx.fillText('×' + this.combo.toFixed(1) + ' COMBO', this.w - 22, 90);
+      cx.fillText('×' + this.combo.toFixed(1) + ' COMBO', this.w - 22, 95);
       cx.shadowBlur = 0;
-      
-      const cbw = 120;
+
+      const cbw = 130;
       const cpct = this.cTimer / 5500;
       cx.fillStyle = 'rgba(255,255,255,0.07)';
-      cx.fillRect(this.w - 22 - cbw, 98, cbw, 2);
+      cx.fillRect(this.w - 22 - cbw, 103, cbw, 3);
       cx.fillStyle = cCol;
-      cx.fillRect(this.w - 22 - cbw, 98, cbw * cpct, 2);
+      cx.fillRect(this.w - 22 - cbw, 103, cbw * cpct, 3);
     }
     cx.textAlign = 'left';
 
-    // Sector & Wave indicator (Bottom Right)
+    // ── Sector label (Bottom Right) with theme colour ──
     cx.textAlign = 'right';
-    cx.font = '8px "Rajdhani"';
-    cx.fillStyle = 'rgba(255,255,255,0.14)';
-    cx.letterSpacing = '5px';
-    cx.fillText("SECTOR", this.w - 22, this.h - 50);
-    cx.font = '800 22px "Oxanium"';
-    cx.fillStyle = 'rgba(0,232,255,0.28)';
-    cx.letterSpacing = '2px';
-    cx.fillText(this.wave.toString().padStart(3, '0'), this.w - 22, this.h - 26);
+    // Background slab
+    cx.fillStyle = 'rgba(0,0,0,0.55)';
+    cx.fillRect(this.w - 130, this.h - 68, 115, 52);
+
+    cx.font = 'bold 9px "Rajdhani"';
+    cx.fillStyle = `${theme.primary}99`;
+    cx.letterSpacing = '4px';
+    cx.fillText(theme.name, this.w - 22, this.h - 46);
+    cx.letterSpacing = '0px';
+
+    cx.font = '800 28px "Oxanium"';
+    cx.fillStyle = theme.primary;
+    cx.shadowBlur = 14;
+    cx.shadowColor = theme.glow;
+    cx.letterSpacing = '3px';
+    cx.fillText(this.wave.toString().padStart(3, '0'), this.w - 22, this.h - 20);
+    cx.shadowBlur = 0;
     cx.letterSpacing = '0px';
     cx.textAlign = 'left';
 
-    // Abilities Cooldown UI (Bottom Center)
+    // ── Abilities Cooldown UI (Bottom Centre) ──
     const drawAbility = (x: number, y: number, key: string, icon: string, a: any) => {
-      const size = 50;
+      const sz = 56;
       const isRdy = a.cd <= 0;
-      
-      cx.fillStyle = 'rgba(255,255,255,0.025)';
-      cx.strokeStyle = isRdy ? 'rgba(0,232,255,0.4)' : 'rgba(255,255,255,0.1)';
-      cx.lineWidth = 1;
-      
-      // Frame
+
+      cx.fillStyle = isRdy ? `${theme.primary}18` : 'rgba(0,0,0,0.5)';
+      cx.strokeStyle = isRdy ? `${theme.primary}88` : 'rgba(255,255,255,0.12)';
+      cx.lineWidth = isRdy ? 1.5 : 1;
+
       cx.beginPath();
-      cx.roundRect(x, y, size, size, 8);
+      cx.roundRect(x, y, sz, sz, 8);
       if (isRdy) {
-        cx.shadowBlur = 12;
-        cx.shadowColor = 'rgba(0,232,255,0.15)';
+        cx.shadowBlur = 16;
+        cx.shadowColor = `${theme.primary}55`;
       }
       cx.fill();
       cx.stroke();
       cx.shadowBlur = 0;
-      
-      // Cooldown overlay
+
       if (!isRdy) {
         const pct = a.cd / a.max;
-        cx.fillStyle = 'rgba(0,0,0,0.65)';
+        cx.fillStyle = 'rgba(0,0,0,0.7)';
         cx.beginPath();
-        cx.roundRect(x, y + size * (1 - pct), size, size * pct, [0, 0, 8, 8]);
+        cx.roundRect(x, y + sz * (1 - pct), sz, sz * pct, [0, 0, 8, 8]);
         cx.fill();
       }
-      
-      // Icon & Text
+
       cx.textAlign = 'center';
       cx.textBaseline = 'middle';
-      cx.font = '19px Arial';
-      cx.fillStyle = '#fff';
-      cx.fillText(icon, x + size/2, y + size/2 - 4);
-      
-      cx.font = '9px "Oxanium"';
-      cx.fillStyle = 'rgba(255,255,255,0.28)';
+      cx.font = '22px Arial';
+      cx.globalAlpha = isRdy ? 1.0 : 0.45;
+      cx.fillText(icon, x + sz / 2, y + sz / 2 - 4);
+      cx.globalAlpha = 1;
+
+      cx.font = `bold 10px "Oxanium"`;
+      cx.fillStyle = isRdy ? theme.primary : 'rgba(255,255,255,0.3)';
       cx.letterSpacing = '1px';
-      cx.fillText(key.toUpperCase(), x + size/2, y + size - 10);
+      cx.fillText(key.toUpperCase(), x + sz / 2, y + sz - 9);
       cx.letterSpacing = '0px';
       cx.textAlign = 'left';
       cx.textBaseline = 'alphabetic';
     };
 
     const cxC = this.w / 2;
-    drawAbility(cxC - 80, this.h - 76, 'q', '💥', this.ab.q);
-    drawAbility(cxC - 25, this.h - 76, 'w', '🛡', this.ab.w);
-    drawAbility(cxC + 30, this.h - 76, 'r', '🌀', this.ab.r);
+    drawAbility(cxC - 90, this.h - 82, 'q', '💥', this.ab.q);
+    drawAbility(cxC - 30, this.h - 82, 'w', '🛡', this.ab.w);
+    drawAbility(cxC + 30, this.h - 82, 'r', '🌀', this.ab.r);
+
+    // Theme zone notification flash (on theme change boundary)
+    if (this.wave === 4 || this.wave === 7 || this.wave === 11) {
+      const age = (this.gTime % 3000) / 3000;
+      if (age < 0.5) {
+        cx.save();
+        cx.globalAlpha = (0.5 - age) * 0.4;
+        cx.fillStyle = theme.primary;
+        cx.fillRect(0, 0, this.w, this.h);
+        cx.restore();
+      }
+    }
   }
 
   private triggerGameOver() {
