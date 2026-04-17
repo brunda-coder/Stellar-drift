@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserProfile, AvatarConfig } from './types';
+import type { UserProfile, AvatarConfig } from './types';
 import { SHIPS, GALAXIES } from './data';
 
 interface GameState {
@@ -19,7 +19,6 @@ interface GameState {
 
 const DEFAULT_PROFILE: UserProfile = {
   username: 'Pilot',
-  passwordHash: '',
   credits: 500, // starter credits
   currentShipId: SHIPS[0].id,
   unlockedShipIds: [SHIPS[0].id],
