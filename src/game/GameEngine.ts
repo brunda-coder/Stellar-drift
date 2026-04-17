@@ -57,6 +57,8 @@ export class GameEngine {
     r: { cd: 0, max: 11000 }
   };
 
+  private paused = false;
+
   constructor(canvas: HTMLCanvasElement, onGameOver: (stats: any) => void) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
@@ -153,6 +155,17 @@ export class GameEngine {
     window.removeEventListener('resize', this.handleResize);
   }
 
+  pause() {
+    this.paused = true;
+  }
+
+  resume() {
+    this.paused = false;
+    this.lastT = performance.now(); // reset to avoid jump
+  }
+
+  get isPaused() { return this.paused; }
+
   private killEnemy(e: Enemy) {
     e.alive = false;
     const pts = Math.round(e.sc * this.combo);
@@ -241,6 +254,7 @@ export class GameEngine {
     this.lastT = ts;
     
     if (!this.player) return; // Game over state
+    if (this.paused) { this.reqId = requestAnimationFrame(this.loop); return; } // paused
     this.gTime += dt;
 
     if (this.shake > 0) {
