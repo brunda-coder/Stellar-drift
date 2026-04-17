@@ -25,7 +25,7 @@ export class GameEngine {
   private cTimer = 0;
   private peakC = 1;
   private wave = 1;
-  private wTimer = 1200;
+  private wTimer = 3000;  // longer initial delay before first wave
   private wCount = 0;
   private gTime = 0;
   private kills = 0;
@@ -203,13 +203,13 @@ export class GameEngine {
     this.wTimer -= dt;
     if (this.wTimer > 0) return;
     
-    // Wave budget
-    const budget = this.wave * 2 + 4;
+    // Wave budget — smaller waves early on
+    const budget = Math.min(this.wave + 2, 10);  // was wave*2+4, now gentler ramp
     const pool: any[] = ['DRIFTER', 'SWARMER'];
-    if (this.wave >= 2) pool.push('HUNTER', 'ORBITER');
-    if (this.wave >= 3) pool.push('PHANTOM');
-    if (this.wave >= 4) pool.push('TITAN');
-    if (this.wave >= 5) pool.push('SNIPER');
+    if (this.wave >= 3) pool.push('HUNTER', 'ORBITER');  // harder enemies appear later
+    if (this.wave >= 5) pool.push('PHANTOM');
+    if (this.wave >= 6) pool.push('TITAN');
+    if (this.wave >= 7) pool.push('SNIPER');
     
     let hpMod = this.galaxyMods.enemyHpMultiplier || 1.0;
     let dmgSizeMod = this.galaxyMods.enemySizeDmg || 1.0;
@@ -220,17 +220,17 @@ export class GameEngine {
           if (this.player) {
             this.ents.push(new Enemy(t, this.w, this.h, this.wave, hpMod, dmgSizeMod));
           }
-        }, i * (this.galaxyMods.enemyFireRate ? 150 : 250));
+        }, i * (this.galaxyMods.enemyFireRate ? 250 : 400));  // slower spawning
     }
     
-    this.wTimer = 5800 + this.wave * 160;
+    this.wTimer = 8000 + this.wave * 120;  // longer between waves (was 5800)
     this.wCount++;
     
-    if (this.wCount % 3 === 0) {
+    if (this.wCount % 4 === 0) {  // wave level-up every 4 waves instead of 3
       this.wave++;
-      this.flt(this.w/2, this.h/2 - 80, 'SECTOR ' + this.wave, '#00e8ff');
-      if (Math.random() < 0.55) this.nebulas.push(new Nebula(this.w, this.h));
-      if (this.wave % 2 === 0 || (this.galaxyMods.blackHoleFreq && Math.random() < 0.8)) {
+      this.flt(this.w/2, this.h/2 - 80, '✦ SECTOR ' + this.wave + ' ✦', '#00e8ff');
+      if (Math.random() < 0.45) this.nebulas.push(new Nebula(this.w, this.h));
+      if (this.wave % 3 === 0 || (this.galaxyMods.blackHoleFreq && Math.random() < 0.7)) {
         this.holes.push(new BlackHole(this.w, this.h));
       }
     }
@@ -339,9 +339,9 @@ export class GameEngine {
     // Player Update
     this.player.update(dt, this.mouse, 5.0, this.wave, (ang, dim) => {
         this.buls.push(new Bullet(this.player!.x, this.player!.y, ang, 'p', dim, '#00e8ff'));
-        // High level burst
-        if (this.wave >= 3) this.buls.push(new Bullet(this.player!.x, this.player!.y, ang + 0.15, 'p', true, '#00e8ff'));
-        if (this.wave >= 5) this.buls.push(new Bullet(this.player!.x, this.player!.y, ang - 0.15, 'p', true, '#00e8ff'));
+        // High level burst (unlocked at lower wave than before)
+        if (this.wave >= 2) this.buls.push(new Bullet(this.player!.x, this.player!.y, ang + 0.15, 'p', true, '#00e8ff'));
+        if (this.wave >= 4) this.buls.push(new Bullet(this.player!.x, this.player!.y, ang - 0.15, 'p', true, '#00e8ff'));
     });
 
     // Buls update
@@ -355,10 +355,10 @@ export class GameEngine {
     this.picks = this.picks.filter(p => p.alive);
     this.picks.forEach(p => {
       p.update(dt, this.player!.x, this.player!.y, this.player!.sz, (type, px, py) => {
-        if (type === 'star') { this.score += 15 * this.combo; this.flt(px, py, '⭐+STAR', '#ffd060'); }
-        else if (type === 'hp') { this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 18); this.flt(px, py, '♥+18', '#ff3a8c'); }
-        else if (type === 'ep') { this.player!.ep = Math.min(this.player!.mep, this.player!.ep + 35); this.flt(px, py, '⚡+35', '#00e8ff'); }
-        else { this.score += 100 * this.combo; this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 30); this.flt(px, py, '💎MEGA!', '#fff'); this.shake += 5; }
+        if (type === 'star') { this.score += 30 * this.combo; this.flt(px, py, '⭐+30', '#ffd060'); }  // doubled from 15
+        else if (type === 'hp') { this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 25); this.flt(px, py, '♥+25', '#ff3a8c'); }  // more heal
+        else if (type === 'ep') { this.player!.ep = Math.min(this.player!.mep, this.player!.ep + 45); this.flt(px, py, '⚡+45', '#00e8ff'); }  // more energy
+        else { this.score += 200 * this.combo; this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 40); this.flt(px, py, '💎MEGA!', '#fff'); this.shake += 5; }
         this.popFx(px, py, type);
       });
       p.draw(ctx);
@@ -372,9 +372,9 @@ export class GameEngine {
       });
       e.draw(ctx);
       
-      // Player <-> Enemy collision
+      // Player <-> Enemy collision (damage reduced by ~50%)
       if (Math.hypot(e.x - this.player!.x, e.y - this.player!.y) < e.sz + this.player!.sz && e.phaseState !== 'ghost') {
-        this.shake += this.player!.hit(0.7 * (dt/16));
+        this.shake += this.player!.hit(0.35 * (dt/16));  // was 0.7
         // Push apart
         e.vx += (e.x - this.player!.x) * 0.1;
         e.vy += (e.y - this.player!.y) * 0.1;
@@ -395,7 +395,7 @@ export class GameEngine {
         });
       } else if (b.own === 'e') {
         if (this.player && Math.hypot(b.x - this.player.x, b.y - this.player.y) < (this.player.sz * 0.7)) {
-          this.shake += this.player.hit(b.dmg);
+          this.shake += this.player.hit(b.dmg * 0.6);  // enemy bullets do 40% less damage
           b.alive = false;
           this.boom(b.x, b.y, b.col, 2);
         }
@@ -408,6 +408,9 @@ export class GameEngine {
     if (this.cTimer > 0) {
       this.cTimer -= dt;
       if (this.cTimer <= 0) this.combo = 1;
+    } else if (this.combo > 1) {
+      // Gradual combo decay instead of instant reset
+      this.combo = Math.max(1, this.combo - 0.001 * dt);
     }
 
     ['q', 'w', 'r'].forEach(k => {

@@ -1,8 +1,191 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { Page } from '../App';
 import NeonButton from '../components/ui/NeonButton';
 import { GameEngine } from '../game/GameEngine';
+
+// ── Enemy type definitions for the tutorial legend ──
+const ENEMY_LEGEND = [
+  { name: 'DRIFTER',  color: '#8b45ff', trait: 'Slow bio-drone. Easiest target.',     wave: 1 },
+  { name: 'SWARMER',  color: '#ff3a8c', trait: 'Tiny, fast dart. Comes in packs.',    wave: 1 },
+  { name: 'HUNTER',   color: '#ef4444', trait: 'Agile arrowhead. Chases you hard.',   wave: 3 },
+  { name: 'ORBITER',  color: '#06b6d4', trait: 'Circles you, fires at range.',         wave: 3 },
+  { name: 'PHANTOM',  color: '#ffffff', trait: 'Goes ghost — bullets pass through!',   wave: 5 },
+  { name: 'SNIPER',   color: '#34d399', trait: 'Stays far, fires triple spread.',      wave: 7 },
+  { name: 'TITAN',    color: '#f59e0b', trait: 'Massive dreadnought. Splits on death!',wave: 6 },
+];
+
+const CONTROLS = [
+  { key: 'MOUSE', icon: '🖱️', desc: 'Aim & lead the ship' },
+  { key: 'Q',     icon: '💥', desc: 'Nova Burst — AoE blast 250px' },
+  { key: 'W',     icon: '🛡',  desc: 'Phase Shield — absorbs hits' },
+  { key: 'R',     icon: '🌀', desc: 'Warp Pull — attract pickups' },
+];
+
+// Small canvas-drawn enemy icon
+function EnemyIcon({ color, name }: { color: string; name: string }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const c = ref.current; if (!c) return;
+    const cx = c.getContext('2d')!;
+    const s = 14;
+    cx.clearRect(0, 0, 44, 44);
+    cx.save();
+    cx.translate(22, 22);
+    cx.shadowBlur = 10;
+    cx.shadowColor = color;
+    cx.strokeStyle = color;
+    cx.fillStyle = color;
+    cx.lineWidth = 1.5;
+
+    if (name === 'DRIFTER') {
+      cx.beginPath(); cx.arc(0,0,s*0.5,0,Math.PI*2); cx.fillStyle='rgba(20,20,30,0.8)'; cx.fill();
+      cx.beginPath(); cx.arc(0,0,s*0.28,0,Math.PI*2); cx.fillStyle=color; cx.fill();
+      cx.beginPath(); cx.moveTo(s*0.9,0); cx.bezierCurveTo(s*0.4,-s*0.6,-s*0.4,-s*0.4,-s,0);
+      cx.bezierCurveTo(-s*0.4,s*0.4,s*0.4,s*0.6,s*0.9,0); cx.strokeStyle=color; cx.stroke();
+    } else if (name === 'HUNTER') {
+      cx.beginPath(); cx.moveTo(s,0); cx.lineTo(-s,-s*0.9); cx.lineTo(-s*0.4,0); cx.lineTo(-s,s*0.9); cx.closePath();
+      cx.fillStyle='rgba(30,10,10,0.8)'; cx.fill(); cx.stroke();
+    } else if (name === 'TITAN') {
+      cx.beginPath(); cx.moveTo(s,0); cx.lineTo(s*0.4,-s*0.9); cx.lineTo(-s,-s*0.6); cx.lineTo(-s*0.7,0); cx.lineTo(-s,s*0.6); cx.lineTo(s*0.4,s*0.9); cx.closePath();
+      const g=cx.createRadialGradient(0,0,0,0,0,s); g.addColorStop(0,color); g.addColorStop(1,'#000'); cx.fillStyle=g; cx.fill(); cx.stroke();
+    } else if (name === 'SWARMER') {
+      cx.beginPath(); cx.moveTo(s,0); cx.lineTo(-s,-s*0.55); cx.lineTo(-s*0.5,0); cx.lineTo(-s,s*0.55); cx.closePath();
+      cx.fillStyle='rgba(20,10,15,0.8)'; cx.fill(); cx.stroke();
+      cx.beginPath(); cx.arc(0,0,s*0.2,0,Math.PI*2); cx.fillStyle='rgba(0,232,255,0.9)'; cx.fill();
+    } else if (name === 'ORBITER') {
+      cx.beginPath(); cx.arc(0,0,s*0.45,0,Math.PI*2); cx.fillStyle='#111'; cx.fill();
+      cx.beginPath(); cx.arc(0,0,s*0.85,-Math.PI/4,Math.PI/4); cx.arc(0,0,s*0.85,Math.PI-Math.PI/4,Math.PI+Math.PI/4);
+      cx.strokeStyle=color; cx.lineWidth=s*0.22; cx.stroke();
+    } else if (name === 'SNIPER') {
+      cx.beginPath(); cx.moveTo(s*1.2,-s*0.08); cx.lineTo(s*1.2,s*0.08); cx.lineTo(s*0.4,s*0.3); cx.lineTo(-s*0.8,s*0.45);
+      cx.lineTo(-s*0.7,0); cx.lineTo(-s*0.8,-s*0.45); cx.lineTo(s*0.4,-s*0.3); cx.closePath();
+      cx.fillStyle='#0f172a'; cx.fill(); cx.strokeStyle=color; cx.stroke();
+      cx.beginPath(); cx.moveTo(s*1.2,0); cx.lineTo(s*3,0); cx.strokeStyle='rgba(255,0,0,0.25)'; cx.lineWidth=1; cx.stroke();
+    } else if (name === 'PHANTOM') {
+      cx.beginPath(); cx.moveTo(s*0.9,0); cx.quadraticCurveTo(0,-s,-s*0.9,-s*0.8);
+      cx.quadraticCurveTo(-s*0.4,0,-s*0.9,s*0.8); cx.quadraticCurveTo(0,s,s*0.9,0);
+      cx.fillStyle='rgba(255,255,255,0.75)'; cx.fill();
+    }
+    cx.restore();
+  }, [color, name]);
+  return <canvas ref={ref} width={44} height={44} />;
+}
+
+// ── Tutorial overlay component ──
+function TutorialOverlay({ onClose }: { onClose: () => void }) {
+  const [timeLeft, setTimeLeft] = useState(8);
+  useEffect(() => {
+    const iv = setInterval(() => setTimeLeft(t => { if (t <= 1) { clearInterval(iv); onClose(); } return t - 1; }), 1000);
+    return () => clearInterval(iv);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+      className="absolute inset-0 z-40 flex items-center justify-center"
+      style={{ background: 'radial-gradient(ellipse at center, rgba(0,10,30,0.97) 60%, rgba(0,0,10,0.99) 100%)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} transition={{ type: 'spring', bounce: 0.3 }}
+        className="w-full max-w-3xl px-4 py-5"
+        onClick={e => e.stopPropagation()}
+        style={{ maxHeight: '90vh', overflowY: 'auto' }}
+      >
+        {/* Header */}
+        <div className="text-center mb-4">
+          <div className="text-[9px] tracking-[6px] text-cyan-400/50 uppercase mb-1">MISSION BRIEFING</div>
+          <h2 className="text-2xl font-black italic tracking-widest text-white" style={{ fontFamily: 'Oxanium, monospace', textShadow: '0 0 20px rgba(0,232,255,0.6)' }}>
+            FIELD GUIDE
+          </h2>
+          <div className="text-[10px] text-white/30 mt-1" style={{ fontFamily: 'Rajdhani, sans-serif' }}>Know your enemies. Know your weapons.</div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          {/* Enemy Legend */}
+          <div>
+            <div className="text-[8px] tracking-[4px] text-cyan-400/60 uppercase mb-2 px-1">⬡ ENEMY TYPES</div>
+            <div className="space-y-1.5">
+              {ENEMY_LEGEND.map(e => (
+                <div key={e.name}
+                  className="flex items-center gap-3 px-3 py-2 rounded"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid ${e.color}22` }}
+                >
+                  <div className="flex-shrink-0 w-11 h-11 flex items-center justify-center">
+                    <EnemyIcon color={e.color} name={e.name} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-black italic" style={{ fontFamily: 'Oxanium', color: e.color }}>{e.name}</div>
+                    <div className="text-[10px] text-white/50 leading-tight" style={{ fontFamily: 'Rajdhani' }}>{e.trait}</div>
+                  </div>
+                  <div className="flex-shrink-0 text-right">
+                    <div className="text-[8px] text-white/25" style={{ fontFamily: 'Rajdhani' }}>SECTOR</div>
+                    <div className="text-xs font-bold" style={{ color: e.color, fontFamily: 'Oxanium' }}>{e.wave}+</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Controls + Tips */}
+          <div className="flex flex-col gap-3">
+            <div>
+              <div className="text-[8px] tracking-[4px] text-cyan-400/60 uppercase mb-2 px-1">⌖ CONTROLS</div>
+              <div className="space-y-1.5">
+                {CONTROLS.map(c => (
+                  <div key={c.key}
+                    className="flex items-center gap-3 px-3 py-2 rounded"
+                    style={{ background: 'rgba(0,232,255,0.04)', border: '1px solid rgba(0,232,255,0.12)' }}
+                  >
+                    <div className="w-8 h-8 flex items-center justify-center rounded text-sm font-black flex-shrink-0"
+                      style={{ background: 'rgba(0,232,255,0.15)', border: '1px solid rgba(0,232,255,0.4)', fontFamily: 'Oxanium', color: '#00e8ff' }}>
+                      {c.key === 'MOUSE' ? c.icon : c.key}
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-white/80" style={{ fontFamily: 'Rajdhani' }}>{c.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tips */}
+            <div>
+              <div className="text-[8px] tracking-[4px] text-yellow-400/60 uppercase mb-2 px-1">💡 TIPS</div>
+              <div className="space-y-1.5">
+                {[
+                  ['⭐', 'Gold stars = bonus points. Collect them!'],
+                  ['♥',  'Red orbs restore hull. Prioritise when low HP.'],
+                  ['⚡', 'Blue orbs recharge ability energy (Q/W/R).'],
+                  ['💎', 'Rainbow MEGA drop: points + big heal!'],
+                  ['🔥', 'Kill fast to build COMBO multiplier.'],
+                ].map(([icon, tip]) => (
+                  <div key={tip as string} className="flex items-start gap-2 px-3 py-1.5 rounded"
+                    style={{ background: 'rgba(255,208,96,0.03)', border: '1px solid rgba(255,208,96,0.08)' }}>
+                    <span className="text-sm flex-shrink-0">{icon}</span>
+                    <span className="text-[10px] text-white/50 leading-tight" style={{ fontFamily: 'Rajdhani' }}>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center">
+          <button onClick={onClose}
+            className="px-10 py-2.5 font-black italic tracking-widest text-sm transition-all hover:scale-105 active:scale-95"
+            style={{ fontFamily: 'Oxanium', background: 'linear-gradient(135deg,#00e6e6,#0066aa)', color: '#002233', boxShadow: '0 0 20px rgba(0,232,255,0.4)' }}
+          >
+            ▶ ENGAGE — auto in {timeLeft}s
+          </button>
+          <div className="text-[9px] text-white/20 mt-2" style={{ fontFamily: 'Rajdhani' }}>or click anywhere to dismiss</div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 interface GameScreenProps {
   setPage: (p: Page) => void;
