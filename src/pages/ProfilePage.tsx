@@ -448,7 +448,6 @@ export default function ProfilePage({ setPage }: ProfilePageProps) {
   const profile = useGameStore(s => s.profile);
   const updateAvatar = useGameStore(s => s.updateAvatar);
   const spendCredits = useGameStore(s => s.spendCredits);
-  const logout = useGameStore(s => s.logout);
 
   const activePilotId = profile.avatar.pilotId ?? 'nova';
   const [selectedPilot, setSelectedPilot] = useState<Pilot>(
@@ -506,13 +505,6 @@ export default function ProfilePage({ setPage }: ProfilePageProps) {
             <span className="material-symbols-outlined text-white/60 text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>account_circle</span>
             <span className="font-bold text-white/80 text-sm" style={{ fontFamily: 'Oxanium, sans-serif' }}>{profile.username || 'PILOT'}</span>
           </div>
-          {/* Logout */}
-          <button onClick={() => logout()}
-            className="flex items-center gap-1.5 px-3 py-2 text-white/40 hover:text-red-400 border border-white/10 hover:border-red-400/30 transition-all text-xs font-black italic tracking-widest"
-            style={{ fontFamily: 'Oxanium, sans-serif' }}>
-            <span className="material-symbols-outlined text-[15px]">logout</span>
-            LOG OUT
-          </button>
         </div>
       </div>
 

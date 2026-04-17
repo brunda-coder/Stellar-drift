@@ -43,7 +43,6 @@ export interface AvatarConfig {
 
 export interface UserProfile {
   username: string;
-  passwordHash: string;
   credits: number;
   currentShipId: string;
   unlockedShipIds: string[];

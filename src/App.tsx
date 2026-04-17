@@ -5,23 +5,12 @@ import GameScreen from './pages/GameScreen';
 import Hangar from './pages/Hangar';
 import GalaxyChooser from './pages/GalaxyChooser';
 import ProfilePage from './pages/ProfilePage';
-import LoginScreen from './pages/LoginScreen';
 import { useGameStore } from './store/gameStore';
 
 export type Page = 'menu' | 'game' | 'hangar' | 'galaxy' | 'profile';
 
 function App() {
-  const isLoggedIn = useGameStore(s => s.isLoggedIn);
   const [currentPage, setCurrentPage] = useState<Page>('menu');
-
-  // Show login if not authenticated
-  if (!isLoggedIn) {
-    return (
-      <div className="w-screen h-screen overflow-hidden bg-[#000008] relative font-body text-white">
-        <LoginScreen onLoggedIn={() => setCurrentPage('menu')} />
-      </div>
-    );
-  }
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-surface-container-lowest relative font-body text-white">
