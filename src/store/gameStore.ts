@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { UserProfile, AvatarConfig } from './types';
+import type { UserProfile, AvatarConfig, Bounty } from './types';
 import { SHIPS, GALAXIES } from './data';
 
 interface GameState {
@@ -15,7 +15,34 @@ interface GameState {
   updateAvatar: (avatar: Partial<AvatarConfig>) => void;
   updateStats: (kills: number, score: number, flightTime: number) => void;
   claimDailyReward: () => boolean;
+  buyUpgrade: (upgradeId: keyof UserProfile['upgrades'], cost: number) => boolean;
+  
+  // Bounties
+  updateBountyProgress: (progressUpdates: Partial<Record<Bounty['type'], number>>) => void;
+  replaceBounty: (bountyId: string) => void;
+  skipBounty: (bountyId: string) => boolean;
 }
+
+const generateBounty = (completedCount: number): Bounty => {
+  const types: Bounty['type'][] = ['kills', 'graze', 'survive', 'pickups', 'score'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  const scale = 1 + (completedCount * 0.1);
+  
+  let target = 0;
+  let reward = 0;
+  let desc = '';
+  
+  if (type === 'kills') { target = Math.floor(50 * scale); reward = Math.floor(200 * scale); desc = `Destroy ${target} enemy ships`; }
+  else if (type === 'graze') { target = Math.floor(100 * scale); reward = Math.floor(250 * scale); desc = `Earn ${target} Graze points`; }
+  else if (type === 'survive') { target = Math.floor(60 * scale); reward = Math.floor(300 * scale); desc = `Survive for ${target} seconds`; }
+  else if (type === 'pickups') { target = Math.floor(15 * scale); reward = Math.floor(250 * scale); desc = `Collect ${target} pickups`; }
+  else if (type === 'score') { target = Math.floor(5000 * scale); reward = Math.floor(400 * scale); desc = `Earn ${target.toLocaleString()} score`; }
+  
+  return {
+    id: `bty_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+    type, desc, target, progress: 0, reward
+  };
+};
 
 const DEFAULT_PROFILE: UserProfile = {
   username: 'Pilot',
@@ -35,6 +62,15 @@ const DEFAULT_PROFILE: UserProfile = {
     highScore: 0,
     flightTimeSeconds: 0,
   },
+  upgrades: {
+    hullPlating: 0,
+    energyCore: 0,
+    magnetRange: 0,
+    overchargeDuration: 0,
+    adrenalineDecay: 0,
+  },
+  bounties: [generateBounty(0), generateBounty(0), generateBounty(0)],
+  bountiesCompleted: 0,
   lastLoginTimestamp: 0,
 };
 
@@ -95,6 +131,89 @@ export const useGameStore = create<GameState>()(
         }
         return false;
       },
+
+      buyUpgrade: (upgradeId, cost) => {
+        const { profile } = get();
+        if (profile.credits >= cost) {
+          set({ 
+            profile: { 
+              ...profile, 
+              credits: profile.credits - cost,
+              upgrades: {
+                ...profile.upgrades,
+                [upgradeId]: (profile.upgrades[upgradeId] || 0) + 1
+              }
+            } 
+          });
+          return true;
+        }
+        return false;
+      },
+
+      updateBountyProgress: (updates) => set((state) => {
+        const { profile } = state;
+        let creditsGained = 0;
+        let completedCount = profile.bountiesCompleted;
+        
+        const newBounties = profile.bounties.map(b => {
+          if (b.progress >= b.target) return b; // already complete
+          
+          const added = updates[b.type];
+          if (added) {
+            const newProgress = Math.min(b.target, b.progress + added);
+            if (newProgress >= b.target && b.progress < b.target) {
+              // Just completed!
+              creditsGained += b.reward;
+              completedCount++;
+            }
+            return { ...b, progress: newProgress };
+          }
+          return b;
+        });
+
+        // Replace completed bounties automatically
+        const replacedBounties = newBounties.map(b => {
+          if (b.progress >= b.target) return generateBounty(completedCount);
+          return b;
+        });
+
+        if (creditsGained > 0 || updates) {
+          return {
+            profile: {
+              ...profile,
+              credits: profile.credits + creditsGained,
+              bounties: replacedBounties,
+              bountiesCompleted: completedCount
+            }
+          };
+        }
+        return state;
+      }),
+
+      replaceBounty: (bountyId) => set((state) => {
+        const bounties = state.profile.bounties.map(b => 
+          b.id === bountyId ? generateBounty(state.profile.bountiesCompleted) : b
+        );
+        return { profile: { ...state.profile, bounties } };
+      }),
+
+      skipBounty: (bountyId) => {
+        const { profile } = get();
+        const skipCost = 500;
+        if (profile.credits >= skipCost) {
+          set({
+            profile: {
+              ...profile,
+              credits: profile.credits - skipCost,
+              bounties: profile.bounties.map(b => 
+                b.id === bountyId ? generateBounty(profile.bountiesCompleted) : b
+              )
+            }
+          });
+          return true;
+        }
+        return false;
+      }
     }),
     {
       name: 'stellar-drift-game-data', // zustand native persist

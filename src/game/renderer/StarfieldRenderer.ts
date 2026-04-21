@@ -12,25 +12,25 @@ export class StarfieldRenderer {
     const cols = ['255,248,225', '200,220,255', '255,200,200', '255,230,150', '200,255,255'];
     
     // Deep parallax stars
-    this.stars = Array.from({length: 300}, () => {
+    this.stars = Array.from({length: 120}, () => {
       const layer = Math.random(); // 0 = far background, 1 = foreground
       return {
         x: Math.random() * w,
         y: Math.random() * h,
-        r: rnd(0.5, 1.5) + (layer * 1.5),
-        a: rnd(0.1, 0.4) + (layer * 0.4),
+        r: rnd(0.5, 1.2) + (layer * 0.8),
+        a: rnd(0.1, 0.3) + (layer * 0.2),
         tw: Math.random() * Math.PI * 2,
-        c: cols[Math.floor(Math.random() * cols.length)],
+        c: '255,255,255', // Use pure white to avoid the "blue pins" look
         layer: layer
       };
     });
 
     // Fast moving space dust
-    this.dust = Array.from({length: 150}, () => ({
+    this.dust = Array.from({length: 40}, () => ({
       x: Math.random() * w,
       y: Math.random() * h,
-      s: rnd(0.1, 0.5),
-      a: rnd(0.05, 0.2)
+      s: rnd(0.1, 0.3),
+      a: rnd(0.05, 0.15)
     }));
   }
 

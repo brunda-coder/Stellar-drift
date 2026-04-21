@@ -18,7 +18,7 @@ export class Pickup {
     this.vy = rnd(-1.5, 1.5);
   }
 
-  update(dt: number, px: number, py: number, psz: number, cCb: (type: 'star' | 'hp' | 'ep' | 'mega' | 'weapon', x: number, y: number) => void) {
+  update(dt: number, px: number, py: number, psz: number, magnetBonus: number, cCb: (type: 'star' | 'hp' | 'ep' | 'mega' | 'weapon', x: number, y: number) => void) {
     this.age += dt;
     if (this.age > 7000) {
       this.alive = false;
@@ -32,7 +32,7 @@ export class Pickup {
     
     // Magnetize to player
     const d = Math.hypot(px - this.x, py - this.y);
-    if (d < 70) {
+    if (d < 70 + magnetBonus) {
       const a = Math.atan2(py - this.y, px - this.x);
       this.vx += Math.cos(a) * 2.5;
       this.vy += Math.sin(a) * 2.5;

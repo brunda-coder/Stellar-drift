@@ -20,6 +20,8 @@ export class GameEngine {
   private w: number;
   private h: number;
   private mouse = { x: 0, y: 0 };
+  private mouseRaw = { x: 0, y: 0 };
+  private upgrades: any;
   
   // Game State
   private score = 0;
@@ -34,6 +36,10 @@ export class GameEngine {
   private shake = 0;
   private sx = 0;
   private sy = 0;
+  
+  // Juice
+  private rapidKills = 0;
+  private rapidKillTimer = 0;
   
   // Entities
   private player: Player | null = null;
@@ -78,11 +84,13 @@ export class GameEngine {
     const store = useGameStore.getState();
     const shipDef = SHIPS.find(s => s.id === store.profile.currentShipId) || SHIPS[0];
     const galDef = GALAXIES.find(g => g.id === store.profile.unlockedGalaxies[store.profile.unlockedGalaxies.length - 1]) || GALAXIES[0];
+    const upgrades = store.profile.upgrades || {hullPlating:0, energyCore:0, magnetRange:0, overchargeDuration:0, adrenalineDecay:0};
     
     this.galaxyMods = galDef.modifiers;
     this.galaxyColors = galDef.colors;
+    this.upgrades = upgrades;
     
-    this.player = new Player(this.w, this.h, shipDef);
+    this.player = new Player(this.w, this.h, shipDef, upgrades);
     this.starfield = new StarfieldRenderer(this.w, this.h);
     this.nebulas.push(new Nebula(this.w, this.h));
     
@@ -90,8 +98,8 @@ export class GameEngine {
   }
 
   setMousePos(x: number, y: number) {
-    this.mouse.x = x;
-    this.mouse.y = y;
+    this.mouseRaw.x = x;
+    this.mouseRaw.y = y;
   }
 
   handleKeyDown(key: string) {
@@ -184,6 +192,14 @@ export class GameEngine {
     if (Math.random() < 0.80) this.picks.push(new Pickup(e.x, e.y));
     this.flt(e.x, e.y, '+' + pts, e.col);
     
+    this.rapidKills++;
+    this.rapidKillTimer = 2000;
+    
+    if (this.rapidKills === 3) this.flt(this.w/2, this.h * 0.25, 'TRIPLE KILL!', '#ff8c00');
+    if (this.rapidKills === 5) this.flt(this.w/2, this.h * 0.25, 'RAMPAGE!', '#ff0055');
+    if (this.rapidKills === 10) this.flt(this.w/2, this.h * 0.25, 'GODLIKE!', '#8b45ff');
+    if (this.rapidKills === 20) this.flt(this.w/2, this.h * 0.25, 'UNSTOPPABLE!', '#00e8ff');
+
     if (e.type === 'TITAN') {
       for(let i=0; i<5; i++){
         const split = new Enemy('SWARMER', this.w, this.h, this.wave);
@@ -310,6 +326,10 @@ export class GameEngine {
       zoom = Math.max(0.85, 1.0 - (spd * 0.015));
     }
 
+    // Un-project raw mouse position back to world space
+    this.mouse.x = (this.mouseRaw.x - w / 2) / zoom + w / 2 - this.sx;
+    this.mouse.y = (this.mouseRaw.y - h / 2) / zoom + h / 2 - this.sy;
+
     // Clear & draw background
     ctx.fillStyle = '#010308';
     ctx.fillRect(0, 0, w, h);
@@ -428,18 +448,21 @@ export class GameEngine {
     });
 
     // Pickups update
+    const magnetBonus = (this.upgrades?.magnetRange || 0) * 35;
+    const pickupCb = (type: string, px: number, py: number) => {
+      if (type === 'star') { this.score += 30 * this.combo; this.flt(px, py, '⭐+30', '#ffd060'); }
+      else if (type === 'hp') { this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 25); this.flt(px, py, '♥+25', '#ff3a8c'); }
+      else if (type === 'ep') { this.player!.ep = Math.min(this.player!.mep, this.player!.ep + 45); this.flt(px, py, '⚡+45', '#00e8ff'); }
+      else if (type === 'weapon') {
+        this.player!.weaponTimer = 8000 + (this.upgrades?.overchargeDuration || 0) * 2000;
+        this.flt(px, py, '🔫 OVERCHARGE', '#ff2a00');
+      }
+      else { this.score += 200 * this.combo; this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 40); this.flt(px, py, '💎MEGA!', '#fff'); this.shake += 5; }
+      this.popFx(px, py, type);
+    };
+    this.picks.forEach(p => p.update(dt, this.player!.x, this.player!.y, this.player!.sz, magnetBonus, pickupCb));
     this.picks = this.picks.filter(p => p.alive);
-    this.picks.forEach(p => {
-      p.update(dt, this.player!.x, this.player!.y, this.player!.sz, (type, px, py) => {
-        if (type === 'star') { this.score += 30 * this.combo; this.flt(px, py, '⭐+30', '#ffd060'); }
-        else if (type === 'hp') { this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 25); this.flt(px, py, '♥+25', '#ff3a8c'); }
-        else if (type === 'ep') { this.player!.ep = Math.min(this.player!.mep, this.player!.ep + 45); this.flt(px, py, '⚡+45', '#00e8ff'); }
-        else if (type === 'weapon') { this.player!.weaponTimer = 8000; this.flt(px, py, '🔫 OVERCHARGE', '#ff2a00'); }
-        else { this.score += 200 * this.combo; this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 40); this.flt(px, py, '💎MEGA!', '#fff'); this.shake += 5; }
-        this.popFx(px, py, type);
-      });
-      p.draw(ctx);
-    });
+    this.picks.forEach(p => p.draw(ctx));
 
     // Enemies update
     this.ents = this.ents.filter(e => e.alive);
@@ -502,10 +525,17 @@ export class GameEngine {
         // Player bullets hit enemies
         this.ents.forEach(e => {
           if (e.alive && e.phaseState !== 'ghost' && Math.hypot(b.x - e.x, b.y - e.y) < e.sz) {
-            e.hp -= b.dmg * (this.player!.isAdrenalineActive ? 1.5 : 1);
+            const actDmg = b.dmg * (this.player!.isAdrenalineActive ? 1.5 : 1);
+            const isCrit = Math.random() < 0.15;
+            const finalDmg = isCrit ? actDmg * 2 : actDmg;
+            
+            e.hp -= finalDmg;
             e.fl = 140;
             b.alive = false;
             this.boom(b.x, b.y, b.col, 3);
+            
+            this.flt(e.x + rnd(-15, 15), e.y + rnd(-15, 15), Math.floor(finalDmg).toString(), isCrit ? '#ff0055' : '#fff');
+            
             if (e.hp <= 0) this.killEnemy(e);
           }
         });
@@ -575,6 +605,11 @@ export class GameEngine {
       this.combo = Math.max(1, this.combo - 0.001 * dt);
     }
 
+    if (this.rapidKillTimer > 0) {
+      this.rapidKillTimer -= dt;
+      if (this.rapidKillTimer <= 0) this.rapidKills = 0;
+    }
+
     ['q', 'w', 'r'].forEach(k => {
       const a = this.ab[k as 'q'|'w'|'r'];
       if (a.cd > 0) a.cd -= dt;
@@ -588,8 +623,16 @@ export class GameEngine {
       const dy = (f.age / 1200) * 52;
       ctx.fillStyle = f.col;
       ctx.globalAlpha = al;
-      ctx.font = 'bold 14px "Oxanium"';
+      
+      const isCrit = f.col === '#ff0055';
+      ctx.font = isCrit ? '800 20px "Oxanium"' : 'bold 14px "Oxanium"';
+      if (isCrit) {
+         ctx.shadowBlur = 10;
+         ctx.shadowColor = '#ff0055';
+      }
+      
       ctx.fillText(f.text, f.x - 20, f.y - dy);
+      ctx.shadowBlur = 0;
     });
     ctx.globalAlpha = 1;
 
@@ -844,8 +887,8 @@ export class GameEngine {
     const store = useGameStore.getState();
     const playTime = Math.floor(this.gTime / 1000);
     
-    store.addCredits(Math.floor(this.score / 10)); // 10% score to credits ratio
     store.updateStats(this.kills, Math.floor(this.score), playTime);
+    store.addCredits(Math.floor(this.score / 10)); // Convert points to credits
     
     this.onGameOver({
       score: this.score,

@@ -32,7 +32,7 @@ export class Enemy {
   alive: boolean = true;
   scd: number;
   age: number = 0;
-  oa: number;
+  oa: number = 0;
   fl: number = 0;
   
   phaseState: 'solid' | 'phasing' | 'ghost' = 'solid';

@@ -320,8 +320,9 @@ export default function MainMenu({ setPage }: MainMenuProps) {
           initial={{ x: 60, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.3, type: 'spring', bounce: 0.4 }}
           className="flex flex-col gap-3 ml-10"
         >
+          <SideBtn icon="build_circle" label="Black Market" sublabel="Permanent upgrades" onClick={() => setPage('blackmarket')} color="pink" align="right" />
           <SideBtn icon="assignment" label="Pilot Log" sublabel="Your record" onClick={() => setPage('profile')} color="purple" align="right" />
-          <SideBtn icon="military_tech" label="Daily Reward" sublabel={claimed ? 'Come back tomorrow' : 'Claim now!'} onClick={handleClaim} color="pink" align="right" />
+          <SideBtn icon="military_tech" label="Daily Reward" sublabel={claimed ? 'Come back tomorrow' : 'Claim now!'} onClick={handleClaim} color="cyan" align="right" />
         </motion.div>
       </div>
 

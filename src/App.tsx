@@ -5,9 +5,10 @@ import GameScreen from './pages/GameScreen';
 import Hangar from './pages/Hangar';
 import GalaxyChooser from './pages/GalaxyChooser';
 import ProfilePage from './pages/ProfilePage';
+import BlackMarket from './pages/BlackMarket';
 import { useGameStore } from './store/gameStore';
 
-export type Page = 'menu' | 'game' | 'hangar' | 'galaxy' | 'profile';
+export type Page = 'menu' | 'game' | 'hangar' | 'galaxy' | 'profile' | 'blackmarket';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('menu');
@@ -38,6 +39,11 @@ function App() {
         {currentPage === 'profile' && (
           <motion.div key="profile" initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -60 }} transition={{ duration: 0.3 }} className="absolute inset-0">
             <ProfilePage setPage={setCurrentPage} />
+          </motion.div>
+        )}
+        {currentPage === 'blackmarket' && (
+          <motion.div key="blackmarket" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="absolute inset-0">
+            <BlackMarket setPage={setCurrentPage} />
           </motion.div>
         )}
       </AnimatePresence>

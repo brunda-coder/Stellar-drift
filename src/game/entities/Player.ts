@@ -34,15 +34,18 @@ export class Player {
   private canvasH: number;
   private shipColor: string;
 
-  constructor(w: number, h: number, stats: {hull: number, energy: number, speed: number, shield: number, color: string}) {
+  upgrades: any;
+
+  constructor(w: number, h: number, stats: {hull: number, energy: number, speed: number, shield: number, color: string}, upgrades: any) {
     this.canvasW = w;
     this.canvasH = h;
     this.x = w / 2;
     this.y = h / 2;
-    this.mhp = stats.hull;
-    this.hp = stats.hull;
-    this.mep = stats.energy;
-    this.ep = stats.energy;
+    this.upgrades = upgrades;
+    this.mhp = stats.hull + (upgrades?.hullPlating || 0) * 35;
+    this.hp = this.mhp;
+    this.mep = stats.energy + (upgrades?.energyCore || 0) * 25;
+    this.ep = this.mep;
     this.msh = stats.shield;
     this.shipColor = stats.color;
   }
@@ -112,7 +115,8 @@ export class Player {
         this.adrenaline = 0;
       }
     } else if (this.adrenaline > 0) {
-      this.adrenaline = Math.max(0, this.adrenaline - dt * 0.02); // Slow decay
+      const decay = Math.max(0.005, 0.02 - (this.upgrades?.adrenalineDecay || 0) * 0.003);
+      this.adrenaline = Math.max(0, this.adrenaline - dt * decay); // Slower decay with upgrades
     }
     
     if (this.weaponTimer > 0) this.weaponTimer -= dt;

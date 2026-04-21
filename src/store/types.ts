@@ -1,5 +1,14 @@
 export type ShipTier = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
+export interface Bounty {
+  id: string;
+  desc: string;
+  type: 'kills' | 'graze' | 'survive' | 'pickups' | 'score';
+  target: number;
+  progress: number;
+  reward: number;
+}
+
 export interface Ship {
   id: string;
   name: string;
@@ -53,5 +62,14 @@ export interface UserProfile {
     highScore: number;
     flightTimeSeconds: number;
   };
+  upgrades: {
+    hullPlating: number;
+    energyCore: number;
+    magnetRange: number;
+    overchargeDuration: number;
+    adrenalineDecay: number;
+  };
+  bounties: Bounty[];
+  bountiesCompleted: number;
   lastLoginTimestamp: number;
 }
