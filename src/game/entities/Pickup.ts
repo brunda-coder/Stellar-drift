@@ -3,7 +3,7 @@ import { rnd, drawArc } from '../utils';
 export class Pickup {
   x: number;
   y: number;
-  type: 'star' | 'hp' | 'ep' | 'mega';
+  type: 'star' | 'hp' | 'ep' | 'mega' | 'weapon';
   alive: boolean = true;
   age: number = 0;
   vx: number;
@@ -13,12 +13,12 @@ export class Pickup {
     this.x = x;
     this.y = y;
     const r = Math.random();
-    this.type = r < 0.55 ? 'star' : r < 0.78 ? 'hp' : r < 0.93 ? 'ep' : 'mega';
+    this.type = r < 0.50 ? 'star' : r < 0.70 ? 'hp' : r < 0.88 ? 'ep' : r < 0.96 ? 'weapon' : 'mega';
     this.vx = rnd(-1.5, 1.5);
     this.vy = rnd(-1.5, 1.5);
   }
 
-  update(dt: number, px: number, py: number, psz: number, cCb: (type: 'star' | 'hp' | 'ep' | 'mega', x: number, y: number) => void) {
+  update(dt: number, px: number, py: number, psz: number, cCb: (type: 'star' | 'hp' | 'ep' | 'mega' | 'weapon', x: number, y: number) => void) {
     this.age += dt;
     if (this.age > 7000) {
       this.alive = false;
@@ -55,7 +55,7 @@ export class Pickup {
     cx.scale(pulse, Math.max(0.1, pulse));
     cx.shadowBlur = 18;
     
-    const C = { star: '#ffd060', hp: '#ff3a8c', ep: '#00e8ff', mega: '#fff' };
+    const C: any = { star: '#ffd060', hp: '#ff3a8c', ep: '#00e8ff', mega: '#fff', weapon: '#ff2a00' };
     cx.shadowColor = C[this.type];
     cx.strokeStyle = C[this.type];
     cx.lineWidth = 2;
@@ -94,6 +94,16 @@ export class Pickup {
       cx.moveTo(-3, -3); cx.lineTo(1, -7); cx.lineTo(3, -3);
       cx.moveTo(3, 3); cx.lineTo(-1, 7); cx.lineTo(-3, 3);
       cx.stroke();
+    } else if (this.type === 'weapon') {
+      cx.fillStyle = 'rgba(255, 42, 0, 0.2)';
+      cx.beginPath();
+      drawArc(cx, 0, 0, 8, 0, Math.PI * 2);
+      cx.fill(); cx.stroke();
+      cx.beginPath();
+      cx.moveTo(0, -5); cx.lineTo(4, 5); cx.lineTo(-4, 5);
+      cx.closePath();
+      cx.fillStyle = '#ffea00';
+      cx.fill();
     } else {
       cx.fillStyle = 'rgba(255,255,255,0.08)';
       cx.beginPath();

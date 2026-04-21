@@ -162,6 +162,49 @@ export class EnemyRenderer {
       cx.shadowColor = '#fff';
       cx.fill();
       cx.shadowBlur = 0;
+    } else if (type === 'BOSS') {
+      // Massive Multi-Segmented Boss
+      cx.moveTo(sz * 1.5, 0);
+      cx.lineTo(sz * 0.8, -sz * 1.2);
+      cx.lineTo(-sz * 0.5, -sz * 1.5);
+      cx.lineTo(-sz * 1.5, -sz * 0.5);
+      cx.lineTo(-sz * 1.5, sz * 0.5);
+      cx.lineTo(-sz * 0.5, sz * 1.5);
+      cx.lineTo(sz * 0.8, sz * 1.2);
+      cx.closePath();
+      
+      const g = cx.createRadialGradient(0,0,0, 0,0, sz*1.5);
+      g.addColorStop(0, '#331122');
+      g.addColorStop(1, '#110000');
+      cx.fillStyle = g;
+      cx.fill();
+      
+      cx.strokeStyle = col;
+      cx.lineWidth = 4;
+      cx.stroke();
+
+      // Reactor Core
+      cx.beginPath();
+      cx.arc(0, 0, sz * 0.4, 0, Math.PI * 2);
+      cx.fillStyle = '#ff2a00';
+      cx.shadowBlur = 40;
+      cx.shadowColor = '#ff2a00';
+      cx.fill();
+      cx.shadowBlur = 0;
+
+      // Pincers / Cannons
+      cx.beginPath();
+      cx.moveTo(sz * 0.8, -sz * 0.8);
+      cx.lineTo(sz * 2.5, -sz * 0.4);
+      cx.lineTo(sz * 0.5, -sz * 0.2);
+      
+      cx.moveTo(sz * 0.8, sz * 0.8);
+      cx.lineTo(sz * 2.5, sz * 0.4);
+      cx.lineTo(sz * 0.5, sz * 0.2);
+      
+      cx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      cx.lineWidth = 3;
+      cx.stroke();
     }
     
     // Add unified structural elements to all

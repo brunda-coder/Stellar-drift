@@ -1,7 +1,7 @@
 import { rnd } from '../utils';
 import { EnemyRenderer } from '../renderer/EnemyRenderer';
 
-export type EnemyType = 'DRIFTER' | 'HUNTER' | 'TITAN' | 'SWARMER' | 'ORBITER' | 'SNIPER' | 'PHANTOM';
+export type EnemyType = 'DRIFTER' | 'HUNTER' | 'TITAN' | 'SWARMER' | 'ORBITER' | 'SNIPER' | 'PHANTOM' | 'BOSS';
 
 const ET_DEF: Record<EnemyType, {c: string, s: number, h: number, spd: number, sc: number, sh: string}> = {
   DRIFTER: { c: '#8b45ff', s: 13, h: 18,  spd: 0.85, sc: 80,  sh: 'tri' },
@@ -10,7 +10,8 @@ const ET_DEF: Record<EnemyType, {c: string, s: number, h: number, spd: number, s
   SWARMER: { c: '#ff3a8c', s: 7,  h: 8,   spd: 2.0,  sc: 40,  sh: 'dot' },
   ORBITER: { c: '#06b6d4', s: 9,  h: 14,  spd: 1.3,  sc: 90,  sh: 'star' },
   SNIPER:  { c: '#34d399', s: 10, h: 22,  spd: 0.65, sc: 140, sh: 'arr' },
-  PHANTOM: { c: '#ffffff', s: 12, h: 16,  spd: 1.0,  sc: 160, sh: 'cross' }
+  PHANTOM: { c: '#ffffff', s: 12, h: 16,  spd: 1.0,  sc: 160, sh: 'cross' },
+  BOSS:    { c: '#ff0055', s: 45, h: 1500, spd: 0.3,  sc: 5000,sh: 'boss' }
 };
 
 export class Enemy {
@@ -37,21 +38,37 @@ export class Enemy {
   phaseState: 'solid' | 'phasing' | 'ghost' = 'solid';
   phaseTimer: number = 0;
 
+  // Boss specific
+  bossPhase: number = 1;
+  bossMoveTarget: {x: number, y: number} = {x: 0, y: 0};
+
   constructor(type: EnemyType, w: number, h: number, wave: number, hpMultiplier: number = 1.0, sizeDmgMod: number = 1.0) {
     this.type = type;
     const d = ET_DEF[type];
     this.col = d.c;
     this.sz = d.s * sizeDmgMod;
-    this.hp = (d.h + wave * 4) * hpMultiplier;  // wave scaling reduced (was 7 per wave)
+    
+    if (type === 'BOSS') {
+      this.hp = d.h * Math.max(1, wave / 5) * hpMultiplier;
+    } else {
+      this.hp = (d.h + wave * 4) * hpMultiplier;
+    }
+    
     this.mhp = this.hp;
-    this.spd = d.spd + wave * 0.025;             // speed scaling reduced (was 0.04)
+    this.spd = d.spd + wave * 0.025;
     this.sc = d.sc;
     this.sh = d.sh;
     
-    this.scd = rnd(1800, 3500);                  // longer initial fire delay (was 1200–2800)
-    this.oa = Math.random() * Math.PI * 2;
-    
-    this.spawn(w, h);
+    if (type === 'BOSS') {
+      this.scd = 2000;
+      this.x = w / 2;
+      this.y = -100;
+      this.bossMoveTarget = { x: w / 2, y: h * 0.3 };
+    } else {
+      this.scd = rnd(1800, 3500);
+      this.oa = Math.random() * Math.PI * 2;
+      this.spawn(w, h);
+    }
   }
 
   private spawn(w: number, h: number) {
@@ -66,6 +83,11 @@ export class Enemy {
     this.age += dt;
     this.fl = Math.max(0, this.fl - dt);
     
+    if (this.type === 'BOSS') {
+      this.updateBoss(dt, px, py, fireCb);
+      return;
+    }
+
     // Phantom logic
     if (this.type === 'PHANTOM') {
       this.phaseTimer -= dt;
@@ -125,6 +147,66 @@ export class Enemy {
         }
       } else {
         fireCb(this.x, this.y, this.ang);
+      }
+    }
+  }
+
+  private updateBoss(dt: number, px: number, py: number, fireCb: (x: number, y: number, ang: number) => void) {
+    const dx = px - this.x;
+    const dy = py - this.y;
+    this.ang = Math.atan2(dy, dx);
+
+    // Update Phase based on HP
+    const hpPct = this.hp / this.mhp;
+    if (hpPct < 0.35) this.bossPhase = 3;
+    else if (hpPct < 0.7) this.bossPhase = 2;
+
+    // Boss Movement
+    const tx = this.bossMoveTarget.x - this.x;
+    const ty = this.bossMoveTarget.y - this.y;
+    if (Math.hypot(tx, ty) < 20) {
+      // Pick new target near top half
+      this.bossMoveTarget.x = rnd(100, px > 100 ? px + 200 : 800);
+      this.bossMoveTarget.y = rnd(50, 250);
+    }
+    
+    const d = Math.hypot(tx, ty);
+    this.vx += (tx / Math.max(1, d)) * this.spd * 0.1;
+    this.vy += (ty / Math.max(1, d)) * this.spd * 0.1;
+    
+    this.vx *= 0.92;
+    this.vy *= 0.92;
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Boss Firing Patterns
+    this.scd -= dt;
+    if (this.scd <= 0) {
+      if (this.bossPhase === 1) {
+        // Phase 1: Ring blast
+        this.scd = 2000;
+        for (let i = 0; i < 12; i++) {
+          fireCb(this.x, this.y, (Math.PI * 2 / 12) * i + (this.age * 0.001));
+        }
+      } else if (this.bossPhase === 2) {
+        // Phase 2: Directed spread + fast fire
+        this.scd = 1200;
+        for (let i = -2; i <= 2; i++) {
+          fireCb(this.x, this.y, this.ang + i * 0.15);
+        }
+        setTimeout(() => {
+          if (!this.alive) return;
+          for (let i = -1; i <= 1; i++) fireCb(this.x, this.y, this.ang + i * 0.15);
+        }, 300);
+      } else {
+        // Phase 3: Bullet Hell Spiral
+        this.scd = 150;
+        const spiralAng = (this.age * 0.008) % (Math.PI * 2);
+        fireCb(this.x, this.y, spiralAng);
+        fireCb(this.x, this.y, spiralAng + Math.PI);
+        if (Math.random() < 0.2) {
+           fireCb(this.x, this.y, this.ang); // occasional direct shot
+        }
       }
     }
   }

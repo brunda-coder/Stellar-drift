@@ -4,7 +4,9 @@ import { Enemy } from './entities/Enemy';
 import { Bullet } from './entities/Bullet';
 import { BlackHole } from './entities/BlackHole';
 import { Pickup } from './entities/Pickup';
+import { Asteroid } from './entities/Asteroid';
 import { StarfieldRenderer, Nebula } from './renderer/StarfieldRenderer';
+import { AsteroidRenderer } from './renderer/AsteroidRenderer';
 import { SHIPS, GALAXIES } from '../store/data';
 import { rnd, drawArc } from './utils';
 
@@ -40,6 +42,7 @@ export class GameEngine {
   private picks: Pickup[] = [];
   private holes: BlackHole[] = [];
   private nebulas: Nebula[] = [];
+  private asteroids: Asteroid[] = [];
   private parts: any[] = [];
   private floatTexts: any[] = [];
   private spawnQueue: { type: any, delay: number, hpMod: number, dmgSizeMod: number }[] = [];
@@ -214,40 +217,71 @@ export class GameEngine {
   }
 
   private spawnWaves(dt: number) {
+    if (this.ents.some(e => e.type === 'BOSS')) {
+      this.wTimer = 5000; // stall wave timer while boss is alive
+      return;
+    }
+
     this.wTimer -= dt;
     if (this.wTimer > 0) return;
     
-    // Wave budget — smaller waves early on
-    const budget = Math.min(this.wave + 2, 10);  // was wave*2+4, now gentler ramp
-    const pool: any[] = ['DRIFTER', 'SWARMER'];
-    if (this.wave >= 3) pool.push('HUNTER', 'ORBITER');  // harder enemies appear later
-    if (this.wave >= 5) pool.push('PHANTOM');
-    if (this.wave >= 6) pool.push('TITAN');
-    if (this.wave >= 7) pool.push('SNIPER');
-    
     let hpMod = this.galaxyMods.enemyHpMultiplier || 1.0;
     let dmgSizeMod = this.galaxyMods.enemySizeDmg || 1.0;
-    
-    for (let i = 0; i < budget; i++) {
-        const t = pool[Math.floor(Math.random() * pool.length)];
-        this.spawnQueue.push({
-          type: t,
-          delay: i * (this.galaxyMods.enemyFireRate ? 250 : 400),  // slower spawning
-          hpMod,
-          dmgSizeMod
-        });
+
+    const isBossWave = (this.wave > 0 && this.wave % 5 === 0);
+
+    if (isBossWave) {
+      this.flt(this.w/2, this.h/2 - 80, '⚠️ WARNING: ANOMALY DETECTED ⚠️', '#ff0055');
+      this.shake = 30;
+      this.spawnQueue.push({
+        type: 'BOSS',
+        delay: 2000,
+        hpMod,
+        dmgSizeMod
+      });
+      // Skip normal wave processing
+    } else {
+      // Wave budget — smaller waves early on
+      const budget = Math.min(this.wave + 2, 10);
+      const pool: any[] = ['DRIFTER', 'SWARMER'];
+      if (this.wave >= 3) pool.push('HUNTER', 'ORBITER');
+      if (this.wave >= 5) pool.push('PHANTOM');
+      if (this.wave >= 6) pool.push('TITAN');
+      if (this.wave >= 7) pool.push('SNIPER');
+      
+      for (let i = 0; i < budget; i++) {
+          const t = pool[Math.floor(Math.random() * pool.length)];
+          this.spawnQueue.push({
+            type: t,
+            delay: i * (this.galaxyMods.enemyFireRate ? 250 : 400),
+            hpMod,
+            dmgSizeMod
+          });
+      }
     }
     
-    this.wTimer = 8000 + this.wave * 120;  // longer between waves (was 5800)
+    this.wTimer = 8000 + this.wave * 120;
     this.wCount++;
     
-    if (this.wCount % 4 === 0) {  // wave level-up every 4 waves instead of 3
+    if (this.wCount % 4 === 0) {  // wave level-up every 4 waves
       this.wave++;
       this.flt(this.w/2, this.h/2 - 80, '✦ SECTOR ' + this.wave + ' ✦', '#00e8ff');
       if (Math.random() < 0.45) this.nebulas.push(new Nebula(this.w, this.h));
       if (this.wave % 3 === 0 || (this.galaxyMods.blackHoleFreq && Math.random() < 0.7)) {
         this.holes.push(new BlackHole(this.w, this.h));
       }
+    }
+    
+    // Random Asteroid Spawning
+    if (Math.random() < 0.08) {
+      const edge = Math.floor(Math.random() * 4);
+      let ax, ay, avx, avy;
+      const speed = rnd(0.5, 2.5);
+      if (edge === 0) { ax = Math.random() * this.w; ay = -50; avx = rnd(-1, 1); avy = speed; }
+      else if (edge === 1) { ax = this.w + 50; ay = Math.random() * this.h; avx = -speed; avy = rnd(-1, 1); }
+      else if (edge === 2) { ax = Math.random() * this.w; ay = this.h + 50; avx = rnd(-1, 1); avy = -speed; }
+      else { ax = -50; ay = Math.random() * this.h; avx = speed; avy = rnd(-1, 1); }
+      this.asteroids.push(new Asteroid(ax, ay, rnd(15, 45), avx, avy));
     }
   }
 
@@ -268,10 +302,22 @@ export class GameEngine {
 
     const { ctx, w, h } = this;
     
+    // Dynamic camera zoom based on player speed and adrenaline
+    let zoom = 1.0;
+    if (this.player.isAdrenalineActive) zoom = 0.92;
+    else {
+      const spd = Math.hypot(this.player.vx, this.player.vy);
+      zoom = Math.max(0.85, 1.0 - (spd * 0.015));
+    }
+
     // Clear & draw background
     ctx.fillStyle = '#010308';
     ctx.fillRect(0, 0, w, h);
     ctx.save();
+    
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-w / 2, -h / 2);
     ctx.translate(this.sx, this.sy);
 
     // Dynamic background gradients logic based on Sector (wave) progression
@@ -353,11 +399,25 @@ export class GameEngine {
     }
 
     // Player Update
-    this.player.update(dt, this.mouse, 5.0, this.wave, (ang, dim) => {
-        this.buls.push(new Bullet(this.player!.x, this.player!.y, ang, 'p', dim, '#00e8ff'));
-        // High level burst (unlocked at lower wave than before)
-        if (this.wave >= 2) this.buls.push(new Bullet(this.player!.x, this.player!.y, ang + 0.15, 'p', true, '#00e8ff'));
-        if (this.wave >= 4) this.buls.push(new Bullet(this.player!.x, this.player!.y, ang - 0.15, 'p', true, '#00e8ff'));
+    this.player.update(dt, this.mouse, 5.0, this.wave, (ang, dim, isAdr) => {
+        // Fire logic: affected by combo and adrenaline
+        const col = isAdr ? '#ff2a00' : '#00e8ff';
+        const numShots = this.combo >= 6 ? 5 : this.combo >= 3 ? 3 : 1;
+        const spread = 0.15;
+
+        if (numShots === 1) {
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang, 'p', dim, col));
+        } else if (numShots === 3) {
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang, 'p', dim, col));
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang + spread, 'p', true, col));
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang - spread, 'p', true, col));
+        } else {
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang, 'p', dim, col));
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang + spread, 'p', true, col));
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang - spread, 'p', true, col));
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang + spread * 2, 'p', true, col));
+          this.buls.push(new Bullet(this.player!.x, this.player!.y, ang - spread * 2, 'p', true, col));
+        }
     });
 
     // Buls update
@@ -371,9 +431,10 @@ export class GameEngine {
     this.picks = this.picks.filter(p => p.alive);
     this.picks.forEach(p => {
       p.update(dt, this.player!.x, this.player!.y, this.player!.sz, (type, px, py) => {
-        if (type === 'star') { this.score += 30 * this.combo; this.flt(px, py, '⭐+30', '#ffd060'); }  // doubled from 15
-        else if (type === 'hp') { this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 25); this.flt(px, py, '♥+25', '#ff3a8c'); }  // more heal
-        else if (type === 'ep') { this.player!.ep = Math.min(this.player!.mep, this.player!.ep + 45); this.flt(px, py, '⚡+45', '#00e8ff'); }  // more energy
+        if (type === 'star') { this.score += 30 * this.combo; this.flt(px, py, '⭐+30', '#ffd060'); }
+        else if (type === 'hp') { this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 25); this.flt(px, py, '♥+25', '#ff3a8c'); }
+        else if (type === 'ep') { this.player!.ep = Math.min(this.player!.mep, this.player!.ep + 45); this.flt(px, py, '⚡+45', '#00e8ff'); }
+        else if (type === 'weapon') { this.player!.weaponTimer = 8000; this.flt(px, py, '🔫 OVERCHARGE', '#ff2a00'); }
         else { this.score += 200 * this.combo; this.player!.hp = Math.min(this.player!.mhp, this.player!.hp + 40); this.flt(px, py, '💎MEGA!', '#fff'); this.shake += 5; }
         this.popFx(px, py, type);
       });
@@ -388,33 +449,101 @@ export class GameEngine {
       });
       e.draw(ctx);
       
-      // Player <-> Enemy collision (damage reduced by ~50%)
-      if (Math.hypot(e.x - this.player!.x, e.y - this.player!.y) < e.sz + this.player!.sz && e.phaseState !== 'ghost') {
+      // Player <-> Enemy collision & Graze
+      const dist = Math.hypot(e.x - this.player!.x, e.y - this.player!.y);
+      if (dist < e.sz + this.player!.sz && e.phaseState !== 'ghost') {
         this.shake += this.player!.hit(0.35 * (dt/16));  // was 0.7
         // Push apart
         e.vx += (e.x - this.player!.x) * 0.1;
         e.vy += (e.y - this.player!.y) * 0.1;
+      } else if (dist < e.sz + this.player!.sz + 55 && e.phaseState !== 'ghost') {
+        // Graze
+        this.player!.addGraze(0.6 * (dt/16));
+        this.score += 2 * this.combo;
       }
     });
+
+    // Asteroids update
+    const newAsts: Asteroid[] = [];
+    this.asteroids = this.asteroids.filter(a => a.alive);
+    this.asteroids.forEach(a => {
+      a.update(dt, w, h);
+      AsteroidRenderer.draw(ctx, a);
+
+      // Asteroid hits player
+      const distToPlayer = Math.hypot(a.x - this.player!.x, a.y - this.player!.y);
+      if (distToPlayer < a.sz + this.player!.sz * 0.8) {
+        this.shake += this.player!.hit(a.sz * 0.5);
+        this.boom(a.x, a.y, '#aaa', a.sz * 0.5);
+        a.alive = false;
+        newAsts.push(...a.shatter());
+      } else if (distToPlayer < a.sz + this.player!.sz * 0.8 + 40) {
+        this.player!.addGraze(0.3 * (dt/16));
+      }
+
+      // Asteroid hits enemies
+      this.ents.forEach(e => {
+        if (!e.alive || e.phaseState === 'ghost') return;
+        if (Math.hypot(a.x - e.x, a.y - e.y) < a.sz + e.sz) {
+          e.hp -= a.sz;
+          e.fl = 100;
+          this.boom(a.x, a.y, '#aaa', 5);
+          a.alive = false;
+          newAsts.push(...a.shatter());
+          if (e.hp <= 0) this.killEnemy(e);
+        }
+      });
+    });
+    this.asteroids.push(...newAsts);
 
     // Bullet Collisions
     this.buls.forEach(b => {
       if (b.own === 'p') {
+        // Player bullets hit enemies
         this.ents.forEach(e => {
           if (e.alive && e.phaseState !== 'ghost' && Math.hypot(b.x - e.x, b.y - e.y) < e.sz) {
-            e.hp -= b.dmg;
+            e.hp -= b.dmg * (this.player!.isAdrenalineActive ? 1.5 : 1);
             e.fl = 140;
             b.alive = false;
             this.boom(b.x, b.y, b.col, 3);
             if (e.hp <= 0) this.killEnemy(e);
           }
         });
+        
+        // Player bullets hit asteroids
+        this.asteroids.forEach(a => {
+          if (a.alive && Math.hypot(b.x - a.x, b.y - a.y) < a.sz) {
+            a.hp -= b.dmg;
+            b.alive = false;
+            this.boom(b.x, b.y, '#777', 2);
+            if (a.hp <= 0) {
+              this.boom(a.x, a.y, '#aaa', a.sz * 0.5);
+              this.score += Math.round(a.sz * this.combo);
+              this.asteroids.push(...a.shatter());
+            }
+          }
+        });
       } else if (b.own === 'e') {
-        if (this.player && Math.hypot(b.x - this.player.x, b.y - this.player.y) < (this.player.sz * 0.7)) {
-          this.shake += this.player.hit(b.dmg * 0.6);  // enemy bullets do 40% less damage
+        const pDist = Math.hypot(b.x - this.player!.x, b.y - this.player!.y);
+        if (pDist < (this.player!.sz * 0.7)) {
+          this.shake += this.player!.hit(b.dmg * 0.6);  // enemy bullets do 40% less damage
           b.alive = false;
           this.boom(b.x, b.y, b.col, 2);
+        } else if (pDist < (this.player!.sz * 2.5)) {
+          // Graze bullets
+          this.player!.addGraze(0.8);
+          this.score += 1 * this.combo;
         }
+
+        // Enemy bullets hit asteroids
+        this.asteroids.forEach(a => {
+          if (a.alive && Math.hypot(b.x - a.x, b.y - a.y) < a.sz) {
+            a.hp -= b.dmg;
+            b.alive = false;
+            this.boom(b.x, b.y, '#777', 2);
+            if (a.hp <= 0) this.asteroids.push(...a.shatter());
+          }
+        });
       }
     });
 
@@ -488,6 +617,39 @@ export class GameEngine {
       return               { primary: '#ff067f', secondary: '#d873ff', glow: 'rgba(255,6,127,0.6)',          name: 'VOID' };
     };
     const theme = getTheme();
+
+    // ── Boss HP Bar (Top Center) ──
+    const boss = this.ents.find(e => e.type === 'BOSS');
+    if (boss && boss.alive) {
+      cx.save();
+      const bw = Math.min(400, this.w * 0.6);
+      const bx = this.w / 2 - bw / 2;
+      const by = 24;
+      
+      cx.fillStyle = 'rgba(0,0,0,0.7)';
+      cx.fillRect(bx - 4, by - 4, bw + 8, 26);
+      
+      const pct = Math.max(0, boss.hp / boss.mhp);
+      const bg = cx.createLinearGradient(bx, by, bx + bw, by);
+      bg.addColorStop(0, '#ff0055');
+      bg.addColorStop(1, '#ffaa00');
+      
+      cx.fillStyle = bg;
+      cx.fillRect(bx, by, bw * pct, 18);
+      
+      // Boss segment markers
+      cx.fillStyle = 'rgba(0,0,0,0.5)';
+      cx.fillRect(bx + bw * 0.35, by, 3, 18);
+      cx.fillRect(bx + bw * 0.7, by, 3, 18);
+
+      cx.fillStyle = '#fff';
+      cx.font = 'bold 12px "Oxanium"';
+      cx.textAlign = 'center';
+      cx.shadowBlur = 4;
+      cx.shadowColor = '#000';
+      cx.fillText(`ANOMALY CLASS: OMEGA - PHASE ${boss.bossPhase}`, this.w / 2, by + 13);
+      cx.restore();
+    }
 
     // ── HP / EP / Shield bars (Top Left) ──
     const drawBar = (x: number, y: number, icon: string, val: number, max: number, barColor: string, barEnd: string, labelColor: string) => {
@@ -638,6 +800,42 @@ export class GameEngine {
         cx.fillRect(0, 0, this.w, this.h);
         cx.restore();
       }
+    }
+
+    // Adrenaline Bar Overlay (Screen edges glow)
+    if (this.player.adrenaline > 0) {
+      cx.save();
+      const aPct = this.player.adrenaline / 100;
+      const gAlpha = this.player.isAdrenalineActive ? 0.3 + Math.sin(Date.now() * 0.01) * 0.1 : aPct * 0.15;
+      
+      const vGrad = cx.createLinearGradient(0, 0, 0, this.h);
+      vGrad.addColorStop(0, `rgba(255, 60, 0, ${gAlpha})`);
+      vGrad.addColorStop(0.1, 'transparent');
+      vGrad.addColorStop(0.9, 'transparent');
+      vGrad.addColorStop(1, `rgba(255, 60, 0, ${gAlpha})`);
+      cx.fillStyle = vGrad;
+      cx.fillRect(0, 0, this.w, this.h);
+      
+      const hGrad = cx.createLinearGradient(0, 0, this.w, 0);
+      hGrad.addColorStop(0, `rgba(255, 60, 0, ${gAlpha})`);
+      hGrad.addColorStop(0.05, 'transparent');
+      hGrad.addColorStop(0.95, 'transparent');
+      hGrad.addColorStop(1, `rgba(255, 60, 0, ${gAlpha})`);
+      cx.fillStyle = hGrad;
+      cx.fillRect(0, 0, this.w, this.h);
+
+      // Adrenaline Gauge text
+      cx.font = 'bold 12px "Oxanium"';
+      cx.fillStyle = this.player.isAdrenalineActive ? '#ff2a00' : '#ffaa00';
+      cx.textAlign = 'center';
+      cx.fillText(`ADRENALINE: ${Math.floor(this.player.adrenaline)}%`, this.w / 2, 85);
+      
+      if (this.player.isAdrenalineActive) {
+        cx.font = '800 16px "Oxanium"';
+        cx.fillText(`🔥 MAXIMUM OVERDRIVE 🔥`, this.w / 2, 105);
+      }
+      
+      cx.restore();
     }
   }
 

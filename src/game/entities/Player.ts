@@ -17,6 +17,14 @@ export class Player {
   shOn: boolean = false;
   shT: number = 0;
   inv: number = 0;
+
+  // Adrenaline / Graze System
+  adrenaline: number = 0;
+  isAdrenalineActive: boolean = false;
+  adrTimer: number = 0;
+  
+  // Powerups
+  weaponTimer: number = 0;
   
   sz: number = 15;
   trail: {x: number, y: number, a: number}[] = [];
@@ -39,7 +47,16 @@ export class Player {
     this.shipColor = stats.color;
   }
 
-  update(dt: number, mouse: {x: number, y: number}, shipSpeedStat: number, wave: number, fireCb: (ang: number, dim: boolean) => void) {
+  addGraze(amount: number) {
+    if (this.isAdrenalineActive) return;
+    this.adrenaline = Math.min(100, this.adrenaline + amount);
+    if (this.adrenaline >= 100) {
+      this.isAdrenalineActive = true;
+      this.adrTimer = 6000; // 6 seconds of adrenaline
+    }
+  }
+
+  update(dt: number, mouse: {x: number, y: number}, shipSpeedStat: number, wave: number, fireCb: (ang: number, dim: boolean, isAdr: boolean) => void) {
     const dx = mouse.x - this.x;
     const dy = mouse.y - this.y;
     const d = Math.hypot(dx, dy);
@@ -52,7 +69,9 @@ export class Player {
     
     this.ang += diff * 0.28;
     
-    const maxSpeed = shipSpeedStat * 1.5;
+    let maxSpeed = shipSpeedStat * 1.5;
+    if (this.isAdrenalineActive) maxSpeed *= 1.3; // Speed boost during adrenaline
+
     const spd = d > 5 ? Math.min(d * 0.1, maxSpeed) : 0;
     
     this.vx += (Math.cos(this.ang) * spd - this.vx) * 0.25;
@@ -69,7 +88,7 @@ export class Player {
     
     // Trail calculation
     this.trail.push({x: this.x, y: this.y, a: 0});
-    if(this.trail.length > 24) this.trail.shift();
+    if(this.trail.length > (this.isAdrenalineActive ? 40 : 24)) this.trail.shift();
     this.trail.forEach(t => t.a++);
     
     this.ef = Math.sin(Date.now() * 0.018) * 0.5 + 0.5;
@@ -83,15 +102,32 @@ export class Player {
     }
     
     if (this.inv > 0) this.inv -= dt;
+
+    // Adrenaline Logic
+    if (this.isAdrenalineActive) {
+      this.adrTimer -= dt;
+      this.adrenaline = (this.adrTimer / 6000) * 100;
+      if (this.adrTimer <= 0) {
+        this.isAdrenalineActive = false;
+        this.adrenaline = 0;
+      }
+    } else if (this.adrenaline > 0) {
+      this.adrenaline = Math.max(0, this.adrenaline - dt * 0.02); // Slow decay
+    }
+    
+    if (this.weaponTimer > 0) this.weaponTimer -= dt;
     
     this.scd -= dt;
     if (this.scd <= 0) {
-      this.scd = 200 + Math.max(0, 100 - wave * 4); // auto fire
-      // Find closest enemy angle, or just shoot straight. Handled by callback.
-      fireCb(this.ang, false); 
+      let fireRate = 200 + Math.max(0, 100 - wave * 4);
+      if (this.isAdrenalineActive) fireRate *= 0.4; // 2.5x fire rate
+      if (this.weaponTimer > 0) fireRate *= 0.3; // Insane fire rate with weapon powerup
+
+      this.scd = fireRate;
+      fireCb(this.ang, false, this.isAdrenalineActive); 
     }
     
-    this.ep = Math.min(this.mep, this.ep + dt * 0.015);
+    this.ep = Math.min(this.mep, this.ep + dt * (this.isAdrenalineActive ? 0.04 : 0.015));
   }
 
   hit(dmg: number): number {
@@ -123,13 +159,13 @@ export class Player {
     for (let i = 0; i < this.trail.length; i++) {
         const t = this.trail[i];
         const al = i / this.trail.length;
-        const r = al * 7;
+        const r = al * (this.isAdrenalineActive ? 10 : 7);
         cx.beginPath();
         cx.arc(t.x, t.y, r, 0, Math.PI * 2);
-        cx.fillStyle = `rgba(0,232,255,${al * 0.28})`;
+        cx.fillStyle = this.isAdrenalineActive ? `rgba(255, 100, 0, ${al * 0.4})` : `rgba(0,232,255,${al * 0.28})`;
         cx.fill();
     }
     
-    RocketRenderer.draw(cx, this.x, this.y, this.ang, this.sz, this.shOn, this.inv, this.vx, this.vy, this.ef, this.shipColor);
+    RocketRenderer.draw(cx, this.x, this.y, this.ang, this.sz, this.shOn, this.inv, this.vx, this.vy, this.ef, this.shipColor, this.isAdrenalineActive);
   }
 }

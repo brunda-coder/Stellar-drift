@@ -11,24 +11,30 @@ export class RocketRenderer {
     vx: number,
     vy: number,
     ef: number,
-    color: string = '#00e8ff'
+    color: string = '#00e8ff',
+    isAdr: boolean = false
   ) {
     cx.save();
     cx.translate(x, y);
     cx.rotate(ang);
     
     // Thruster flames
-    if (Math.abs(vx) + Math.abs(vy) > 0.3) {
+    if (Math.abs(vx) + Math.abs(vy) > 0.3 || isAdr) {
       const fg = cx.createRadialGradient(-sz, 0, 0, -sz, 0, 16);
-      fg.addColorStop(0, `rgba(0,180,255,${0.65 * ef})`);
-      fg.addColorStop(0.5, `rgba(139,69,255,${0.28 * ef})`);
+      if (isAdr) {
+        fg.addColorStop(0, `rgba(255,255,100,${0.9 * ef})`);
+        fg.addColorStop(0.5, `rgba(255,50,0,${0.6 * ef})`);
+      } else {
+        fg.addColorStop(0, `rgba(0,180,255,${0.65 * ef})`);
+        fg.addColorStop(0.5, `rgba(139,69,255,${0.28 * ef})`);
+      }
       fg.addColorStop(1, 'transparent');
       cx.fillStyle = fg;
-      cx.fillRect(-sz * 2.5, -14, sz * 2.5, 28);
+      cx.fillRect(-sz * (isAdr ? 4.0 : 2.5), -14, sz * (isAdr ? 4.0 : 2.5), 28);
     }
     
-    cx.shadowBlur = shOn ? 25 : invT > 0 ? 15 : 22;
-    cx.shadowColor = shOn ? '#00ffaa' : invT > 0 ? '#ff5c1a' : color;
+    cx.shadowBlur = isAdr ? 35 : shOn ? 25 : invT > 0 ? 15 : 22;
+    cx.shadowColor = isAdr ? '#ffaa00' : shOn ? '#00ffaa' : invT > 0 ? '#ff5c1a' : color;
     
     // Detailed Nose Cone & Body
     cx.beginPath();
@@ -39,12 +45,12 @@ export class RocketRenderer {
     cx.closePath();
     
     const sg = cx.createLinearGradient(-sz, -sz, sz, sz);
-    sg.addColorStop(0, shOn ? '#00ffaa' : color);
-    sg.addColorStop(1, '#0e2040');
+    sg.addColorStop(0, isAdr ? '#ffea00' : shOn ? '#00ffaa' : color);
+    sg.addColorStop(1, isAdr ? '#ff2a00' : '#0e2040');
     cx.fillStyle = sg;
     cx.fill();
     
-    cx.strokeStyle = shOn ? 'rgba(0,255,170,0.85)' : color;
+    cx.strokeStyle = isAdr ? '#ffffff' : shOn ? 'rgba(0,255,170,0.85)' : color;
     cx.lineWidth = 1.5;
     cx.stroke();
 
