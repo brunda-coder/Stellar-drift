@@ -4,6 +4,7 @@ import type { Page } from '../App';
 import NeonButton from '../components/ui/NeonButton';
 import { GameEngine } from '../game/GameEngine';
 import { useGameStore } from '../store/gameStore';
+import { saveRun, getRunHistory, type RunRecord } from '../store/runHistory';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TUTORIAL DATA — each step is a tooltip card with a screen-region anchor
@@ -562,6 +563,7 @@ export default function GameScreen({ setPage }: GameScreenProps) {
   const [gameStats, setGameStats] = useState({ score: 0, kills: 0, time: 0 });
   const [showTutorial, setShowTutorial] = useState(true);
   const [paused, setPaused] = useState(false);
+  const [runHistory, setRunHistory] = useState<RunRecord[]>([]);
 
   const pilotId = profile.avatar.pilotId ?? 'nova';
 
@@ -584,6 +586,15 @@ export default function GameScreen({ setPage }: GameScreenProps) {
         setGameStats(stats);
         setGameOver(true);
         document.body.classList.remove('game-active');
+        // Save this run to persistent localStorage history
+        saveRun({
+          score: Math.floor(stats.score),
+          kills: stats.kills,
+          timeSec: stats.time,
+          pilotId: profile.avatar.pilotId ?? 'nova',
+          shipId: profile.currentShipId,
+        });
+        setRunHistory(getRunHistory());
       }
     );
     engineRef.current = engine;
@@ -746,6 +757,37 @@ export default function GameScreen({ setPage }: GameScreenProps) {
                   </div>
                 ))}
               </div>
+
+              {/* Run History */}
+              {runHistory.length > 1 && (
+                <div className="w-full mt-4"
+                  style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.5)' }}>
+                  <div className="px-4 py-2 border-b text-[9px] tracking-[4px] text-white/40 uppercase"
+                    style={{ fontFamily: 'Rajdhani, sans-serif', borderColor: 'rgba(255,255,255,0.06)' }}>
+                    ◆ PAST RUNS
+                  </div>
+                  <div className="max-h-28 overflow-y-auto">
+                    {runHistory.slice(0, 8).map((r, i) => (
+                      <div key={r.id}
+                        className="flex items-center justify-between px-4 py-1.5 border-b last:border-0"
+                        style={{
+                          borderColor: 'rgba(255,255,255,0.04)',
+                          background: i === 0 ? 'rgba(0,232,255,0.06)' : 'transparent',
+                        }}>
+                        <span className="text-[10px] text-white/50" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                          {i === 0 ? '▶ ' : ''}{new Date(r.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </span>
+                        <span className="text-[11px] font-black text-white/80" style={{ fontFamily: 'Oxanium, sans-serif' }}>
+                          {r.score.toLocaleString()}
+                        </span>
+                        <span className="text-[10px] text-white/40" style={{ fontFamily: 'Rajdhani, sans-serif' }}>
+                          {r.kills}k · {Math.floor(r.timeSec / 60)}m{r.timeSec % 60}s
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Buttons */}
               <div className="flex gap-3 mt-5 w-full">
