@@ -74,6 +74,9 @@ const DEFAULT_PROFILE: UserProfile = {
   lastLoginTimestamp: 0,
 };
 
+// Export default profile for use in other modules
+export { DEFAULT_PROFILE };
+
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
