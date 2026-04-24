@@ -4,7 +4,7 @@
 
 Your Stellar Drift game now has:
 
-1. **✅ Permanent Web Address**: Game will be accessible at `https://YOUR-USERNAME.github.io/Stellar-drift/`
+1. **✅ Permanent Web Address**: Game will be accessible at `https://brunda-coder.github.io/Stellar-drift/`
 2. **✅ Local Save System**: Game data automatically saves to player's browser
 3. **✅ Backup System**: Players can create 3 backup save slots
 4. **✅ File Management**: Players can export/import saves as JSON files
